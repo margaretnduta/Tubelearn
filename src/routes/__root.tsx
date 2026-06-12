@@ -70,9 +70,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lumen — Turn YouTube into deliberate study" },
+      { title: "TubeLearn — Turn YouTube into deliberate study" },
       { name: "description", content: "Organize YouTube videos into learning categories and track real progress." },
-      { property: "og:title", content: "Lumen — Turn YouTube into deliberate study" },
+      { property: "og:title", content: "TubeLearn — Turn YouTube into deliberate study" },
       { property: "og:description", content: "Organize YouTube videos into learning categories and track real progress." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
