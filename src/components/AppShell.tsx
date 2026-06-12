@@ -68,6 +68,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Plus className="h-4 w-4" /> Add video
                 </button>
                 {user && (
+                  <Link
+                    to="/profile"
+                    onClick={() => setOpenNav(false)}
+                    className="mt-1 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <UserCircle2 className="h-4 w-4" /> Profile
+                  </Link>
+                )}
+                {user && (
                   <button
                     onClick={() => { setOpenNav(false); signOut(); navigate({ to: "/" }); }}
                     className="mt-1 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
