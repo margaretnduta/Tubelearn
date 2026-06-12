@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogOut, Trash2, UserCircle2, Save } from "lucide-react";
+import { LogOut, Trash2, UserCircle2, Save, KeyRound, Eye, EyeOff } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
 
