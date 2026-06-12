@@ -172,11 +172,10 @@ function FooterCol({ title, children }: { title: string; children: ReactNode }) 
   );
 }
 
-function FooterLink({ to, search, children }: { to: string; search?: never; children: ReactNode }) {
+function FooterLink({ to, children }: { to: "/" | "/dashboard" | "/library"; children: ReactNode }) {
   return (
     <Link
       to={to}
-      search={search}
       className="text-xs text-muted-foreground transition-colors hover:text-foreground"
     >
       {children}
