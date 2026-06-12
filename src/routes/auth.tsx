@@ -32,6 +32,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (currentUserId) return <Navigate to="/dashboard" />;
 
