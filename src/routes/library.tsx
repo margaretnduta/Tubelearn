@@ -1,14 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { VideoCard } from "@/components/VideoCard";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/library")({
   head: () => ({
     meta: [
-      { title: "Library — Lumen" },
+      { title: "Library — TubeLearn" },
       { name: "description", content: "Every video you've added, across all categories." },
     ],
   }),
@@ -16,11 +17,14 @@ export const Route = createFileRoute("/library")({
 });
 
 function Library() {
+  const userId = useAuth((s) => s.currentUserId);
   const videos = useStore((s) => s.videos);
   const categories = useStore((s) => s.categories);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "todo" | "done" | "unsorted">("all");
   const [catFilter, setCatFilter] = useState<string | "all">("all");
+
+  if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/library" }} />;
 
   const filtered = videos
     .filter((v) => {
