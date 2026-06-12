@@ -1,13 +1,27 @@
 import { Link } from "@tanstack/react-router";
-import { Check, Clock } from "lucide-react";
+import { Check, Clock, MoreVertical, Trash2, FolderInput, PlayCircle } from "lucide-react";
 import { useStore, formatDuration, relativeTime } from "@/lib/store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function VideoCard({ videoId }: { videoId: string }) {
   const video = useStore((s) => s.videos.find((v) => v.id === videoId));
+  const categories = useStore((s) => s.categories);
   const category = useStore((s) =>
     video?.categoryId ? s.categories.find((c) => c.id === video.categoryId) : null,
   );
   const toggleComplete = useStore((s) => s.toggleComplete);
+  const deleteVideo = useStore((s) => s.deleteVideo);
+  const assignCategory = useStore((s) => s.assignCategory);
 
   if (!video) return null;
 
@@ -38,11 +52,63 @@ export function VideoCard({ videoId }: { videoId: string }) {
       </Link>
 
       <div className="space-y-2 p-3">
-        <Link to="/video/$id" params={{ id: video.id }}>
-          <h3 className="line-clamp-2 text-sm font-medium leading-snug group-hover:text-[var(--ember)]">
-            {video.title}
-          </h3>
-        </Link>
+        <div className="flex items-start gap-2">
+          <Link to="/video/$id" params={{ id: video.id }} className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 text-sm font-medium leading-snug group-hover:text-[var(--ember)]">
+              {video.title}
+            </h3>
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label="Video options"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus:opacity-100 focus:outline-none group-hover:opacity-100 data-[state=open]:opacity-100"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem asChild>
+                <Link to="/video/$id" params={{ id: video.id }}>
+                  <PlayCircle className="mr-2 h-4 w-4" /> Open player
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => toggleComplete(video.id)}>
+                <Check className="mr-2 h-4 w-4" />
+                {video.completed ? "Mark not done" : "Mark done"}
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <FolderInput className="mr-2 h-4 w-4" /> Move to…
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Category
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => assignCategory(video.id, null)}>
+                    Unsorted
+                  </DropdownMenuItem>
+                  {categories.map((c) => (
+                    <DropdownMenuItem key={c.id} onSelect={() => assignCategory(video.id, c.id)}>
+                      <span className="mr-2 h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} />
+                      {c.name}
+                      {video.categoryId === c.id && <Check className="ml-auto h-3.5 w-3.5" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => {
+                  if (confirm(`Delete "${video.title}"? This can't be undone.`)) {
+                    deleteVideo(video.id);
+                  }
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete video
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span className="truncate">{video.channel}</span>
           <span className="tabular shrink-0">{relativeTime(video.addedAt)}</span>
