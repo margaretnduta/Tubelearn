@@ -17,6 +17,7 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const user = useAuth((s) => (s.currentUserId ? s.users.find((u) => u.id === s.currentUserId) : null));
   const updateProfile = useAuth((s) => s.updateProfile);
+  const changePassword = useAuth((s) => s.changePassword);
   const signOut = useAuth((s) => s.signOut);
   const deleteAccount = useAuth((s) => s.deleteAccount);
   const navigate = useNavigate();
@@ -25,6 +26,14 @@ function ProfilePage() {
   const [username, setUsername] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   if (!user) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/profile" }} />;
 
