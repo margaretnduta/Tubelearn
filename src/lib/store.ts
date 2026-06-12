@@ -141,6 +141,33 @@ export const useStore = create<AppState>()(
               : v,
           ),
         })),
+
+      bumpStreak: (videoId) => {
+        const now = Date.now();
+        const { lastStreakAt, streak, streakWatchedIds } = get();
+        const expired = !lastStreakAt || now - lastStreakAt > STREAK_WINDOW_MS;
+        if (expired) {
+          set({ streak: 1, lastStreakAt: now, streakWatchedIds: [videoId] });
+          return;
+        }
+        if (streakWatchedIds.includes(videoId)) {
+          // Same video within window — refresh the window but don't double-count.
+          set({ lastStreakAt: now });
+          return;
+        }
+        set({
+          streak: streak + 1,
+          lastStreakAt: now,
+          streakWatchedIds: [...streakWatchedIds, videoId].slice(-200),
+        });
+      },
+
+      getCurrentStreak: () => {
+        const { lastStreakAt, streak } = get();
+        if (!lastStreakAt) return 0;
+        if (Date.now() - lastStreakAt > STREAK_WINDOW_MS) return 0;
+        return streak;
+      },
     }),
     { name: "lumen-store-v1" },
   ),
