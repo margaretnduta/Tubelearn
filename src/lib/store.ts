@@ -83,11 +83,15 @@ const DEFAULT_CATEGORIES: Category[] = [
 
 export const useStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       theme: "dark",
       categories: DEFAULT_CATEGORIES,
       videos: [],
       sessions: [],
+
+      streak: 0,
+      lastStreakAt: null,
+      streakWatchedIds: [],
 
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
       setTheme: (theme) => set({ theme }),
