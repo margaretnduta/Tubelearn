@@ -1,8 +1,9 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Trash2, ExternalLink } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useStore, formatDuration, relativeTime } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/video/$id")({
   component: VideoPage,
