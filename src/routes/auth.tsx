@@ -25,6 +25,7 @@ function AuthPage() {
   const currentUserId = useAuth((s) => s.currentUserId);
   const signUp = useAuth((s) => s.signUp);
   const signIn = useAuth((s) => s.signIn);
+  const resetPassword = useAuth((s) => s.resetPassword);
 
   const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signin");
   const [name, setName] = useState("");
@@ -33,6 +34,12 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPw, setResetPw] = useState("");
+  const [resetPw2, setResetPw2] = useState("");
+  const [resetMsg, setResetMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [showResetPw, setShowResetPw] = useState(false);
 
   if (currentUserId) return <Navigate to="/dashboard" />;
 
