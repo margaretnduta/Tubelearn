@@ -46,6 +46,7 @@ function VideoPage() {
   const deleteVideo = useStore((s) => s.deleteVideo);
   const assignCategory = useStore((s) => s.assignCategory);
   const logSession = useStore((s) => s.logSession);
+  const bumpStreak = useStore((s) => s.bumpStreak);
 
   const [notes, setNotes] = useState(video?.notes ?? "");
   const sessionStart = useRef<number | null>(null);
@@ -53,6 +54,7 @@ function VideoPage() {
   // Track watch time while page is open
   useEffect(() => {
     if (!id) return;
+    bumpStreak(id);
     sessionStart.current = Date.now();
     const flush = () => {
       if (sessionStart.current) {

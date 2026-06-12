@@ -38,6 +38,10 @@ interface AppState {
   videos: Video[];
   sessions: SessionLog[];
 
+  streak: number;
+  lastStreakAt: number | null;
+  streakWatchedIds: string[]; // videos counted in the current streak
+
   toggleTheme: () => void;
   setTheme: (t: "dark" | "light") => void;
 
@@ -52,7 +56,11 @@ interface AppState {
   assignCategory: (videoId: string, categoryId: string | null) => void;
 
   logSession: (videoId: string, seconds: number) => void;
+  bumpStreak: (videoId: string) => void;
+  getCurrentStreak: () => number;
 }
+
+const STREAK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -75,11 +83,15 @@ const DEFAULT_CATEGORIES: Category[] = [
 
 export const useStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       theme: "dark",
       categories: DEFAULT_CATEGORIES,
       videos: [],
       sessions: [],
+
+      streak: 0,
+      lastStreakAt: null,
+      streakWatchedIds: [],
 
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
       setTheme: (theme) => set({ theme }),
@@ -129,6 +141,33 @@ export const useStore = create<AppState>()(
               : v,
           ),
         })),
+
+      bumpStreak: (videoId) => {
+        const now = Date.now();
+        const { lastStreakAt, streak, streakWatchedIds } = get();
+        const expired = !lastStreakAt || now - lastStreakAt > STREAK_WINDOW_MS;
+        if (expired) {
+          set({ streak: 1, lastStreakAt: now, streakWatchedIds: [videoId] });
+          return;
+        }
+        if (streakWatchedIds.includes(videoId)) {
+          // Same video within window — refresh the window but don't double-count.
+          set({ lastStreakAt: now });
+          return;
+        }
+        set({
+          streak: streak + 1,
+          lastStreakAt: now,
+          streakWatchedIds: [...streakWatchedIds, videoId].slice(-200),
+        });
+      },
+
+      getCurrentStreak: () => {
+        const { lastStreakAt, streak } = get();
+        if (!lastStreakAt) return 0;
+        if (Date.now() - lastStreakAt > STREAK_WINDOW_MS) return 0;
+        return streak;
+      },
     }),
     { name: "lumen-store-v1" },
   ),

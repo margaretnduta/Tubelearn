@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap, Github, Mail, Menu } from "lucide-react";
+import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap, Github, Mail, Menu, UserCircle2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
@@ -68,6 +68,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Plus className="h-4 w-4" /> Add video
                 </button>
                 {user && (
+                  <Link
+                    to="/profile"
+                    onClick={() => setOpenNav(false)}
+                    className="mt-1 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <UserCircle2 className="h-4 w-4" /> Profile
+                  </Link>
+                )}
+                {user && (
                   <button
                     onClick={() => { setOpenNav(false); signOut(); navigate({ to: "/" }); }}
                     className="mt-1 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -128,9 +137,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             {user && (
               <div className="hidden items-center gap-2 border-l border-border pl-2 sm:flex">
                 <div className="hidden text-right md:block">
-                  <div className="text-xs font-medium leading-tight">{user.name}</div>
-                  <div className="text-[10px] leading-tight text-muted-foreground">{user.email}</div>
+                  <div className="text-xs font-medium leading-tight">hello {user.username}</div>
+                  <div className="text-[10px] leading-tight text-muted-foreground">{user.name}</div>
                 </div>
+                <Link
+                  to="/profile"
+                  aria-label="Your profile"
+                  className="grid h-10 w-10 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground"
+                >
+                  <UserCircle2 className="h-5 w-5" />
+                </Link>
                 <button
                   onClick={() => { signOut(); navigate({ to: "/" }); }}
                   aria-label="Sign out"
