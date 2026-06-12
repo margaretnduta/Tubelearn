@@ -34,7 +34,12 @@ function Dashboard() {
   const deleteCategory = useStore((s) => s.deleteCategory);
   const [openCat, setOpenCat] = useState(false);
 
-  const liveStreak = lastStreakAt && Date.now() - lastStreakAt <= 24 * 60 * 60 * 1000 ? streak : 0;
+  const daysSince = lastStreakAt
+    ? Math.round(
+        (new Date().setHours(0, 0, 0, 0) - new Date(lastStreakAt).setHours(0, 0, 0, 0)) / 86400000,
+      )
+    : Infinity;
+  const liveStreak = daysSince <= 1 ? streak : 0;
 
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/dashboard" }} />;
 
