@@ -92,17 +92,95 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main>{children}</main>
 
-      <footer className="mt-24 border-t border-border">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-6 text-xs text-muted-foreground sm:px-8">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>TubeLearn — turning YouTube into deliberate study.</span>
+      <footer className="mt-24 border-t border-border bg-card/40">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="grid h-7 w-7 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)]">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                </div>
+                <span className="font-display text-lg tracking-tight">TubeLearn</span>
+              </div>
+              <p className="mt-3 max-w-xs text-xs text-muted-foreground">
+                Turning YouTube into deliberate study — one category, one minute at a time.
+              </p>
+            </div>
+            <FooterCol title="Product">
+              <FooterLink to="/dashboard">Dashboard</FooterLink>
+              <FooterLink to="/library">Library</FooterLink>
+              <button
+                onClick={() => setOpenAdd(true)}
+                className="text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Add a video
+              </button>
+            </FooterCol>
+            <FooterCol title="Account">
+              {user ? (
+                <button
+                  onClick={() => { signOut(); navigate({ to: "/" }); }}
+                  className="text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Sign out
+                </button>
+              ) : (
+                <>
+                  <FooterLink to="/auth" search={{ mode: "signin" } as never}>Sign in</FooterLink>
+                  <FooterLink to="/auth" search={{ mode: "signup" } as never}>Create account</FooterLink>
+                </>
+              )}
+              <FooterLink to="/">Home</FooterLink>
+            </FooterCol>
+            <FooterCol title="Connect">
+              <a
+                href="mailto:hello@tubelearn.app"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Mail className="h-3 w-3" /> hello@tubelearn.app
+              </a>
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Github className="h-3 w-3" /> GitHub
+              </a>
+            </FooterCol>
           </div>
-          <span className="tabular">v0.1</span>
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>© {new Date().getFullYear()} TubeLearn. Study, not scroll.</span>
+            </div>
+            <span className="tabular">v0.1</span>
+          </div>
         </div>
       </footer>
 
       <AddVideoDialog open={openAdd} onOpenChange={setOpenAdd} />
     </div>
+  );
+}
+
+function FooterCol({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{title}</p>
+      <div className="flex flex-col gap-2">{children}</div>
+    </div>
+  );
+}
+
+function FooterLink({ to, search, children }: { to: string; search?: never; children: ReactNode }) {
+  return (
+    <Link
+      to={to}
+      search={search}
+      className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {children}
+    </Link>
   );
 }
