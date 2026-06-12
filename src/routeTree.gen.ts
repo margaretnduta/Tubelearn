@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -16,6 +17,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
@@ -79,16 +88,25 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/library'
+    | '/profile'
     | '/category/$id'
     | '/video/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/library' | '/category/$id' | '/video/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/library'
+    | '/profile'
+    | '/category/$id'
+    | '/video/$id'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/dashboard'
     | '/library'
+    | '/profile'
     | '/category/$id'
     | '/video/$id'
   fileRoutesById: FileRoutesById
@@ -98,12 +116,20 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
+  ProfileRoute: typeof ProfileRoute
   CategoryIdRoute: typeof CategoryIdRoute
   VideoIdRoute: typeof VideoIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/library': {
       id: '/library'
       path: '/library'
@@ -154,9 +180,20 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
+  ProfileRoute: ProfileRoute,
   CategoryIdRoute: CategoryIdRoute,
   VideoIdRoute: VideoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
