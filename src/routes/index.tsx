@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight, Mail, Github, Sparkles, Smartphone, Download } from "lucide-react";
+import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight, Mail, Github, Sparkles, Smartphone } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { InstallAppButton } from "@/components/InstallAppButton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -88,9 +89,8 @@ function Landing() {
                 Open this page in your mobile browser and choose <em>Add to Home Screen</em> (iOS Safari) or <em>Install app</em> (Android Chrome) to launch TubeLearn from your home screen — full screen, no browser bar.
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-md bg-[var(--ember)] px-5 py-3 text-sm font-medium text-[oklch(0.2_0.02_60)]">
-              <Download className="h-4 w-4" /> Add to Home Screen
-            </div>
+            <InstallAppButton label="Install app" />
+
           </div>
         </div>
       </section>
