@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
