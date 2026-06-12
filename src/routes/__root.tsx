@@ -27,7 +27,7 @@ function NotFoundComponent() {
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-[var(--ember)] px-4 py-2 text-sm font-medium text-[oklch(0.2_0.02_60)]"
           >
-            Back to dashboard
+            Back home
           </Link>
         </div>
       </div>
