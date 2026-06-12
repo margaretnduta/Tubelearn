@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-8">
-          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2" aria-label="TubeLearn home">
             <div className="grid h-8 w-8 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)]">
               <GraduationCap className="h-4 w-4" />
             </div>
