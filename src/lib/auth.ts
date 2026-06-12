@@ -23,6 +23,7 @@ interface AuthState {
   signOut: () => void;
   currentUser: () => AuthUser | null;
   updateProfile: (patch: { name?: string; username?: string; email?: string }) => { ok: true } | { ok: false; error: string };
+  changePassword: (currentPassword: string, newPassword: string) => { ok: true } | { ok: false; error: string };
   deleteAccount: () => void;
 }
 
