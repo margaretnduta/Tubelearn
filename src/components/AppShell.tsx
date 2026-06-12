@@ -128,9 +128,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             {user && (
               <div className="hidden items-center gap-2 border-l border-border pl-2 sm:flex">
                 <div className="hidden text-right md:block">
-                  <div className="text-xs font-medium leading-tight">{user.name}</div>
-                  <div className="text-[10px] leading-tight text-muted-foreground">{user.email}</div>
+                  <div className="text-xs font-medium leading-tight">hello {user.username}</div>
+                  <div className="text-[10px] leading-tight text-muted-foreground">{user.name}</div>
                 </div>
+                <Link
+                  to="/profile"
+                  aria-label="Your profile"
+                  className="grid h-10 w-10 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground"
+                >
+                  <UserCircle2 className="h-5 w-5" />
+                </Link>
                 <button
                   onClick={() => { signOut(); navigate({ to: "/" }); }}
                   aria-label="Sign out"
