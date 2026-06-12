@@ -49,6 +49,23 @@ function ProfilePage() {
     navigate({ to: "/" });
   };
 
+  const onChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPw !== confirmPw) {
+      setPwMsg({ kind: "err", text: "New passwords don't match." });
+      return;
+    }
+    const result = changePassword(currentPw, newPw);
+    if (!result.ok) {
+      setPwMsg({ kind: "err", text: result.error });
+      return;
+    }
+    setPwMsg({ kind: "ok", text: "Password updated." });
+    setCurrentPw("");
+    setNewPw("");
+    setConfirmPw("");
+  };
+
   const onDelete = () => {
     if (!confirm("Delete your account? This removes your profile and cannot be undone.")) return;
     deleteAccount();
