@@ -135,6 +135,57 @@ function ProfilePage() {
           </button>
         </form>
 
+        <form onSubmit={onChangePassword} className="mt-8 space-y-5 rounded-2xl border border-border bg-card p-6">
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Change password</p>
+          </div>
+          <PasswordField
+            label="Current password"
+            value={currentPw}
+            onChange={setCurrentPw}
+            show={showCurrent}
+            toggle={() => setShowCurrent((v) => !v)}
+            autoComplete="current-password"
+          />
+          <PasswordField
+            label="New password"
+            value={newPw}
+            onChange={setNewPw}
+            show={showNew}
+            toggle={() => setShowNew((v) => !v)}
+            autoComplete="new-password"
+          />
+          <PasswordField
+            label="Confirm new password"
+            value={confirmPw}
+            onChange={setConfirmPw}
+            show={showConfirm}
+            toggle={() => setShowConfirm((v) => !v)}
+            autoComplete="new-password"
+          />
+
+          {pwMsg && (
+            <div
+              className={`rounded-md border px-3 py-2 text-sm ${
+                pwMsg.kind === "ok"
+                  ? "border-[var(--moss)]/40 bg-[var(--moss)]/10 text-foreground"
+                  : "border-destructive/40 bg-destructive/10 text-destructive"
+              }`}
+            >
+              {pwMsg.text}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
+          >
+            <KeyRound className="h-4 w-4" /> Update password
+          </button>
+        </form>
+
+
         <div className="mt-8 rounded-2xl border border-border bg-card p-6">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Session</p>
           <button
