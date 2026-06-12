@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
@@ -17,6 +19,16 @@ import { Route as CategoryIdRouteImport } from './routes/category.$id'
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,12 +49,16 @@ const CategoryIdRoute = CategoryIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
@@ -50,20 +66,37 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/library' | '/category/$id' | '/video/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/library'
+    | '/category/$id'
+    | '/video/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/library' | '/category/$id' | '/video/$id'
-  id: '__root__' | '/' | '/library' | '/category/$id' | '/video/$id'
+  to: '/' | '/auth' | '/dashboard' | '/library' | '/category/$id' | '/video/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/library'
+    | '/category/$id'
+    | '/video/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
   CategoryIdRoute: typeof CategoryIdRoute
   VideoIdRoute: typeof VideoIdRoute
@@ -76,6 +109,20 @@ declare module '@tanstack/react-router' {
       path: '/library'
       fullPath: '/library'
       preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,6 +151,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
   CategoryIdRoute: CategoryIdRoute,
   VideoIdRoute: VideoIdRoute,

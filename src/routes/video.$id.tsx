@@ -1,8 +1,9 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Trash2, ExternalLink } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useStore, formatDuration, relativeTime } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/video/$id")({
   component: VideoPage,
@@ -10,7 +11,7 @@ export const Route = createFileRoute("/video/$id")({
     <AppShell>
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">
         <h1 className="font-display text-3xl">Video not found</h1>
-        <Link to="/" className="mt-4 inline-block text-sm text-[var(--ember)]">← Back to dashboard</Link>
+        <Link to="/dashboard" className="mt-4 inline-block text-sm text-[var(--ember)]">← Back to dashboard</Link>
       </div>
     </AppShell>
   ),
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/video/$id")({
 });
 
 function VideoPage() {
+  const userId = useAuth((s) => s.currentUserId);
   const { id } = Route.useParams();
   const video = useStore((s) => s.videos.find((v) => v.id === id));
   const categories = useStore((s) => s.categories);
@@ -60,6 +62,7 @@ function VideoPage() {
     };
   }, [video?.id, logSession, video]);
 
+  if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: `/video/${id}` }} />;
   if (!video) throw notFound();
 
   const category = categories.find((c) => c.id === video.categoryId);
@@ -67,7 +70,7 @@ function VideoPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
-        <Link to="/" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link to="/dashboard" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
 
