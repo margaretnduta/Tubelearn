@@ -60,7 +60,15 @@ interface AppState {
   getCurrentStreak: () => number;
 }
 
-const STREAK_WINDOW_MS = 24 * 60 * 60 * 1000;
+const dayKey = (ts: number) => {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+const daysBetween = (a: number, b: number) => {
+  const da = new Date(a); da.setHours(0, 0, 0, 0);
+  const db = new Date(b); db.setHours(0, 0, 0, 0);
+  return Math.round((db.getTime() - da.getTime()) / 86400000);
+};
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
