@@ -53,12 +53,20 @@ function Landing() {
           TubeLearn lets you organize videos by subject, watch with intent, and track every minute you spend learning — not just bingeing.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/auth" search={{ mode: "signup" }} className="inline-flex items-center gap-2 rounded-md bg-[var(--ember)] px-5 py-3 text-sm font-medium text-[oklch(0.2_0.02_60)]">
-            Create your account <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link to="/auth" search={{ mode: "signin" }} className="rounded-md border border-border bg-card px-5 py-3 text-sm font-medium">
-            I already have one
-          </Link>
+          {userId ? (
+            <Link to="/dashboard" className="inline-flex items-center gap-2 rounded-md bg-[var(--ember)] px-5 py-3 text-sm font-medium text-[oklch(0.2_0.02_60)]">
+              Open your dashboard <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <>
+              <Link to="/auth" search={{ mode: "signup" }} className="inline-flex items-center gap-2 rounded-md bg-[var(--ember)] px-5 py-3 text-sm font-medium text-[oklch(0.2_0.02_60)]">
+                Create your account <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/auth" search={{ mode: "signin" }} className="rounded-md border border-border bg-card px-5 py-3 text-sm font-medium">
+                I already have one
+              </Link>
+            </>
+          )}
         </div>
       </section>
 
