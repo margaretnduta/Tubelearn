@@ -2,15 +2,14 @@ import { createFileRoute, Link, Navigate, useNavigate, useSearch } from "@tansta
 import { useState } from "react";
 import { GraduationCap } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { z } from "zod";
 
-const searchSchema = z.object({
-  mode: z.enum(["signin", "signup"]).optional(),
-  redirect: z.string().optional(),
-});
+type AuthSearch = { mode?: "signin" | "signup"; redirect?: string };
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: searchSchema,
+  validateSearch: (search: Record<string, unknown>): AuthSearch => ({
+    mode: search.mode === "signup" ? "signup" : search.mode === "signin" ? "signin" : undefined,
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — TubeLearn" },
