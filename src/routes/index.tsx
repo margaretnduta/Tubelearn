@@ -14,7 +14,6 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const userId = useAuth((s) => s.currentUserId);
-  if (userId) return <Navigate to="/dashboard" />;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -27,12 +26,20 @@ function Landing() {
             <span className="font-display text-xl tracking-tight">TubeLearn</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link to="/auth" search={{ mode: "signin" }} className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">
-              Sign in
-            </Link>
-            <Link to="/auth" search={{ mode: "signup" }} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background">
-              Get started
-            </Link>
+            {userId ? (
+              <Link to="/dashboard" className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background">
+                Go to Dashboard <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth" search={{ mode: "signin" }} className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">
+                  Sign in
+                </Link>
+                <Link to="/auth" search={{ mode: "signup" }} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background">
+                  Get started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
