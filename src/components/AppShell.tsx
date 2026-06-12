@@ -1,36 +1,90 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap, Home, Github, Mail } from "lucide-react";
+import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap, Github, Mail, Menu } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { AddVideoDialog } from "./AddVideoDialog";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const theme = useStore((s) => s.theme);
   const toggleTheme = useStore((s) => s.toggleTheme);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [openAdd, setOpenAdd] = useState(false);
+  const [openNav, setOpenNav] = useState(false);
 
   const user = useAuth((s) => (s.currentUserId ? s.users.find((u) => u.id === s.currentUserId) : null));
   const signOut = useAuth((s) => s.signOut);
   const navigate = useNavigate();
 
   const navItems = [
-    { to: "/", label: "Home", icon: Home, exact: true },
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { to: "/library", label: "Library", icon: Library, exact: false },
+    { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { to: "/library" as const, label: "Library", icon: Library, exact: false },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-8">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:gap-6 sm:px-8">
+          <Sheet open={openNav} onOpenChange={setOpenNav}>
+            <SheetTrigger asChild>
+              <button
+                aria-label="Open menu"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground sm:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <SheetHeader className="border-b border-border p-4">
+                <SheetTitle className="flex items-center gap-2">
+                  <div className="grid h-8 w-8 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)]">
+                    <GraduationCap className="h-4 w-4" />
+                  </div>
+                  <span className="font-display text-xl tracking-tight">TubeLearn</span>
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-1 p-3">
+                {navItems.map((n) => {
+                  const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
+                  return (
+                    <Link
+                      key={n.to}
+                      to={n.to}
+                      onClick={() => setOpenNav(false)}
+                      className={`flex items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors ${
+                        active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <n.icon className="h-4 w-4" />
+                      {n.label}
+                    </Link>
+                  );
+                })}
+                <button
+                  onClick={() => { setOpenNav(false); setOpenAdd(true); }}
+                  className="mt-2 flex items-center gap-3 rounded-md bg-foreground px-3 py-3 text-sm font-medium text-background"
+                >
+                  <Plus className="h-4 w-4" /> Add video
+                </button>
+                {user && (
+                  <button
+                    onClick={() => { setOpenNav(false); signOut(); navigate({ to: "/" }); }}
+                    className="mt-1 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </button>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           <Link to="/" className="flex items-center gap-2" aria-label="TubeLearn home">
             <div className="grid h-8 w-8 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)]">
               <GraduationCap className="h-4 w-4" />
             </div>
             <span className="font-display text-xl tracking-tight">TubeLearn</span>
-            <span className="hidden sm:inline rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="hidden md:inline rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Study
             </span>
           </Link>
@@ -59,28 +113,28 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setOpenAdd(true)}
-              className="flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+              className="hidden items-center gap-1.5 rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 sm:flex"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add video</span>
+              <span>Add video</span>
             </button>
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
-              className="grid h-9 w-9 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground"
+              className="grid h-10 w-10 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
             {user && (
-              <div className="flex items-center gap-2 border-l border-border pl-2">
-                <div className="hidden text-right sm:block">
+              <div className="hidden items-center gap-2 border-l border-border pl-2 sm:flex">
+                <div className="hidden text-right md:block">
                   <div className="text-xs font-medium leading-tight">{user.name}</div>
                   <div className="text-[10px] leading-tight text-muted-foreground">{user.email}</div>
                 </div>
                 <button
                   onClick={() => { signOut(); navigate({ to: "/" }); }}
                   aria-label="Sign out"
-                  className="grid h-9 w-9 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground"
+                  className="grid h-10 w-10 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground"
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
@@ -92,7 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main>{children}</main>
 
-      <footer className="mt-24 border-t border-border bg-card/40">
+      <footer className="mt-16 border-t border-border bg-card/40 sm:mt-24" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>
