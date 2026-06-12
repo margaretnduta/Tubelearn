@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight } from "lucide-react";
+import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight, Mail, Github, Sparkles, Smartphone, Download } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
@@ -70,15 +70,89 @@ function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-4 px-4 pb-24 sm:grid-cols-3 sm:px-8">
+      <section id="features" className="mx-auto grid max-w-5xl gap-4 px-4 pb-24 sm:grid-cols-3 sm:px-8">
         <Feature icon={Layers} title="Categories" body="Create shelves per subject. Paste any YouTube link and sort it in." />
         <Feature icon={Clock} title="Minutes tracked" body="Every session counts. See exactly how long you've spent on each topic." />
         <Feature icon={CheckCircle2} title="New → In Progress → Done" body="Each video has a real state. Finish the shelf, finish the subject." />
       </section>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-7xl px-4 py-6 text-xs text-muted-foreground sm:px-8">
-          TubeLearn — turning YouTube into deliberate study.
+      <section className="border-t border-border bg-card/40">
+        <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8">
+          <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                <Smartphone className="h-3 w-3" /> Installable app
+              </div>
+              <h2 className="mt-4 font-display text-3xl tracking-tight sm:text-4xl">Install TubeLearn on your phone</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Open this page in your mobile browser and choose <em>Add to Home Screen</em> (iOS Safari) or <em>Install app</em> (Android Chrome) to launch TubeLearn from your home screen — full screen, no browser bar.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-md bg-[var(--ember)] px-5 py-3 text-sm font-medium text-[oklch(0.2_0.02_60)]">
+              <Download className="h-4 w-4" /> Add to Home Screen
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-border bg-background">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <Link to="/" className="flex items-center gap-2">
+                <div className="grid h-8 w-8 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)]">
+                  <GraduationCap className="h-4 w-4" />
+                </div>
+                <span className="font-display text-xl tracking-tight">TubeLearn</span>
+              </Link>
+              <p className="mt-3 max-w-xs text-xs text-muted-foreground">
+                Turn YouTube into a curriculum. Organize, watch with intent, and measure what you learn.
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Product</p>
+              <div className="flex flex-col gap-2 text-xs">
+                <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
+                <Link to="/library" className="text-muted-foreground hover:text-foreground">Library</Link>
+                <a href="#features" className="text-muted-foreground hover:text-foreground">Features</a>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Account</p>
+              <div className="flex flex-col gap-2 text-xs">
+                {userId ? (
+                  <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">Open dashboard</Link>
+                ) : (
+                  <>
+                    <Link to="/auth" search={{ mode: "signin" }} className="text-muted-foreground hover:text-foreground">Sign in</Link>
+                    <Link to="/auth" search={{ mode: "signup" }} className="text-muted-foreground hover:text-foreground">Create account</Link>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Connect</p>
+              <div className="flex flex-col gap-2 text-xs">
+                <a href="mailto:hello@tubelearn.app" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+                  <Mail className="h-3 w-3" /> hello@tubelearn.app
+                </a>
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+                  <Github className="h-3 w-3" /> GitHub
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground">
+            <div className="inline-flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>© {new Date().getFullYear()} TubeLearn. Study, not scroll.</span>
+            </div>
+            <span className="tabular">v0.1</span>
+          </div>
         </div>
       </footer>
     </div>
