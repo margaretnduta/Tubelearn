@@ -149,10 +149,91 @@ function AuthPage() {
           >
             {mode === "signup" ? "Already have an account? Sign in" : "New here? Create an account"}
           </button>
+          {mode === "signin" && (
+            <button
+              type="button"
+              onClick={() => { setShowReset((v) => !v); setResetMsg(null); setResetEmail(email); }}
+              className="mt-3 w-full text-center text-xs text-muted-foreground hover:text-foreground"
+            >
+              {showReset ? "Hide password reset" : "Forgot password?"}
+            </button>
+          )}
+
+          {mode === "signin" && showReset && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setResetMsg(null);
+                if (resetPw !== resetPw2) { setResetMsg({ type: "err", text: "Passwords don't match." }); return; }
+                const r = resetPassword(resetEmail, resetPw);
+                if (!r.ok) { setResetMsg({ type: "err", text: r.error }); return; }
+                setResetMsg({ type: "ok", text: "Password reset. You can sign in now." });
+                setPassword(resetPw);
+                setEmail(resetEmail);
+                setResetPw(""); setResetPw2("");
+              }}
+              className="mt-4 space-y-3 rounded-lg border border-border bg-background/40 p-4"
+            >
+              <p className="text-xs text-muted-foreground">
+                Reset a password for an account that exists on this device.
+              </p>
+              <Field label="Account email">
+                <input
+                  type="email"
+                  required
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value.slice(0, 120))}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                />
+              </Field>
+              <Field label="New password">
+                <div className="relative">
+                  <input
+                    type={showResetPw ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={resetPw}
+                    onChange={(e) => setResetPw(e.target.value.slice(0, 120))}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm outline-none ring-ring focus:ring-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPw((v) => !v)}
+                    aria-label={showResetPw ? "Hide password" : "Show password"}
+                    className="absolute inset-y-0 right-0 grid w-10 place-items-center text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showResetPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </Field>
+              <Field label="Confirm new password">
+                <input
+                  type={showResetPw ? "text" : "password"}
+                  required
+                  minLength={6}
+                  value={resetPw2}
+                  onChange={(e) => setResetPw2(e.target.value.slice(0, 120))}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+                />
+              </Field>
+              {resetMsg && (
+                <div className={`rounded-md px-3 py-2 text-sm ${resetMsg.type === "ok" ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-500" : "border border-destructive/40 bg-destructive/10 text-destructive"}`}>
+                  {resetMsg.text}
+                </div>
+              )}
+              <button
+                type="submit"
+                className="w-full rounded-md border border-border bg-background py-2 text-sm font-medium hover:bg-muted"
+              >
+                Reset password
+              </button>
+            </form>
+          )}
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Local demo auth — your account stays on this device.
+          Local demo auth — your account stays on this device. If you registered in another browser or after clearing storage, that account won't be found here.
         </p>
       </main>
     </div>
