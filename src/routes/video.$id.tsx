@@ -70,7 +70,7 @@ function VideoPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
-        <Link to="/" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link to="/dashboard" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
 
