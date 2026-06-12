@@ -221,3 +221,45 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+
+function PasswordField({
+  label,
+  value,
+  onChange,
+  show,
+  toggle,
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  toggle: () => void;
+  autoComplete: string;
+}) {
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value.slice(0, 120))}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm outline-none ring-ring focus:ring-2"
+          autoComplete={autoComplete}
+          minLength={6}
+          required
+        />
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={show ? "Hide password" : "Show password"}
+          aria-pressed={show}
+          className="absolute inset-y-0 right-0 grid w-10 place-items-center text-muted-foreground hover:text-foreground"
+          tabIndex={-1}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </Field>
+  );
+}
