@@ -150,30 +150,31 @@ export const useStore = create<AppState>()(
           ),
         })),
 
-      bumpStreak: (videoId) => {
+      bumpStreak: (_videoId) => {
         const now = Date.now();
-        const { lastStreakAt, streak, streakWatchedIds } = get();
-        const expired = !lastStreakAt || now - lastStreakAt > STREAK_WINDOW_MS;
-        if (expired) {
-          set({ streak: 1, lastStreakAt: now, streakWatchedIds: [videoId] });
+        const { lastStreakAt, streak } = get();
+        if (!lastStreakAt) {
+          set({ streak: 1, lastStreakAt: now, streakWatchedIds: [] });
           return;
         }
-        if (streakWatchedIds.includes(videoId)) {
-          // Same video within window — refresh the window but don't double-count.
-          set({ lastStreakAt: now });
+        const diff = daysBetween(lastStreakAt, now);
+        if (diff === 0) {
+          // Already counted today — no change.
           return;
         }
-        set({
-          streak: streak + 1,
-          lastStreakAt: now,
-          streakWatchedIds: [...streakWatchedIds, videoId].slice(-200),
-        });
+        if (diff === 1) {
+          set({ streak: streak + 1, lastStreakAt: now, streakWatchedIds: [] });
+          return;
+        }
+        // Missed a day or more — reset.
+        set({ streak: 1, lastStreakAt: now, streakWatchedIds: [] });
       },
 
       getCurrentStreak: () => {
         const { lastStreakAt, streak } = get();
         if (!lastStreakAt) return 0;
-        if (Date.now() - lastStreakAt > STREAK_WINDOW_MS) return 0;
+        const diff = daysBetween(lastStreakAt, Date.now());
+        if (diff > 1) return 0;
         return streak;
       },
     }),
