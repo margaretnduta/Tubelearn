@@ -38,6 +38,10 @@ interface AppState {
   videos: Video[];
   sessions: SessionLog[];
 
+  streak: number;
+  lastStreakAt: number | null;
+  streakWatchedIds: string[]; // videos counted in the current streak
+
   toggleTheme: () => void;
   setTheme: (t: "dark" | "light") => void;
 
@@ -52,7 +56,11 @@ interface AppState {
   assignCategory: (videoId: string, categoryId: string | null) => void;
 
   logSession: (videoId: string, seconds: number) => void;
+  bumpStreak: (videoId: string) => void;
+  getCurrentStreak: () => number;
 }
+
+const STREAK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
