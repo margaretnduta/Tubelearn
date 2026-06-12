@@ -105,13 +105,42 @@ function Dashboard() {
             const done = items.filter((v) => v.completed).length;
             const pct = items.length ? Math.round((done / items.length) * 100) : 0;
             return (
-              <div key={c.id} className="group relative">
+              <div key={c.id} className="group relative overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-lift">
+                <div className="absolute inset-x-0 top-0 z-10 h-1" style={{ backgroundColor: c.color }} />
+
+                <div className="absolute right-2 top-2 z-20">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Options for ${c.name}`}
+                      className="grid h-8 w-8 place-items-center rounded-md bg-background/70 text-muted-foreground opacity-0 backdrop-blur-sm transition-opacity hover:bg-background hover:text-foreground focus:opacity-100 focus:outline-none group-hover:opacity-100 data-[state=open]:opacity-100"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem asChild>
+                        <Link to="/category/$id" params={{ id: c.id }} className="cursor-pointer">
+                          <ChevronRight className="mr-2 h-4 w-4" /> Open
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => {
+                          if (confirm(`Delete "${c.name}"? Videos will move to Unsorted.`)) deleteCategory(c.id);
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete category
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
                 <Link
                   to="/category/$id"
                   params={{ id: c.id }}
-                  className="block overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:shadow-lift"
+                  className="block p-5"
                 >
-                  <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: c.color }} />
                   <div className="flex items-start justify-between gap-3">
                     <div
                       className="grid h-10 w-10 place-items-center rounded-lg font-display text-xl text-[oklch(0.2_0.02_60)]"
@@ -119,7 +148,7 @@ function Dashboard() {
                     >
                       {c.icon}
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                    <ChevronRight className="mr-10 h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
                   </div>
                   <h3 className="mt-4 font-display text-2xl leading-tight tracking-tight">{c.name}</h3>
                   {c.description && (
@@ -133,16 +162,6 @@ function Dashboard() {
                     <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: c.color }} />
                   </div>
                 </Link>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (confirm(`Delete "${c.name}"? Videos will move to Unsorted.`)) deleteCategory(c.id);
-                  }}
-                  className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-md bg-background/80 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-                  aria-label={`Delete ${c.name}`}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
               </div>
             );
           })}
