@@ -62,6 +62,7 @@ function VideoPage() {
     };
   }, [video?.id, logSession, video]);
 
+  if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: `/video/${id}` }} />;
   if (!video) throw notFound();
 
   const category = categories.find((c) => c.id === video.categoryId);
