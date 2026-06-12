@@ -60,10 +60,6 @@ interface AppState {
   getCurrentStreak: () => number;
 }
 
-const dayKey = (ts: number) => {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-};
 const daysBetween = (a: number, b: number) => {
   const da = new Date(a); da.setHours(0, 0, 0, 0);
   const db = new Date(b); db.setHours(0, 0, 0, 0);
