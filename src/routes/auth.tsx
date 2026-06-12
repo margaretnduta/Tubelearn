@@ -34,7 +34,7 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (currentUserId) return <Navigate to={(redirect as "/dashboard") ?? "/dashboard"} />;
+  if (currentUserId) return <Navigate to="/dashboard" />;
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
