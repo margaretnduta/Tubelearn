@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, TrendingUp, Clock, BookOpen, ChevronRight, Trash2, MoreVertical } from "lucide-react";
+import { Plus, TrendingUp, Clock, BookOpen, ChevronRight, Trash2, MoreVertical, Flame } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CategoryDialog } from "@/components/CategoryDialog";
 import { VideoCard } from "@/components/VideoCard";
