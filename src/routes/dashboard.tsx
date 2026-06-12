@@ -1,11 +1,18 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, TrendingUp, Clock, BookOpen, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, TrendingUp, Clock, BookOpen, ChevronRight, Trash2, MoreVertical, Pencil } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CategoryDialog } from "@/components/CategoryDialog";
 import { VideoCard } from "@/components/VideoCard";
 import { useStore, formatDuration, relativeTime } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
