@@ -26,13 +26,18 @@ function Library() {
 
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/library" }} />;
 
+  const q = query.trim().toLowerCase();
   const filtered = videos
     .filter((v) => {
       if (filter === "done" && !v.completed) return false;
       if (filter === "todo" && v.completed) return false;
       if (filter === "unsorted" && v.categoryId) return false;
       if (catFilter !== "all" && v.categoryId !== catFilter) return false;
-      if (query && !`${v.title} ${v.channel}`.toLowerCase().includes(query.toLowerCase())) return false;
+      if (q) {
+        const catName = categories.find((c) => c.id === v.categoryId)?.name ?? "";
+        const hay = `${v.title} ${v.channel} ${catName}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     })
     .sort((a, b) => b.addedAt - a.addedAt);
