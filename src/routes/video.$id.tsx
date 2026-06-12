@@ -54,6 +54,7 @@ function VideoPage() {
   // Track watch time while page is open
   useEffect(() => {
     if (!id) return;
+    bumpStreak(id);
     sessionStart.current = Date.now();
     const flush = () => {
       if (sessionStart.current) {
