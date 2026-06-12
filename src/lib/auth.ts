@@ -107,6 +107,19 @@ export const useAuth = create<AuthState>()(
         return { ok: true };
       },
 
+      changePassword: (currentPassword, newPassword) => {
+        const id = get().currentUserId;
+        if (!id) return { ok: false, error: "Not signed in." };
+        const users = get().users;
+        const current = users.find((u) => u.id === id);
+        if (!current) return { ok: false, error: "Account not found." };
+        if (current.password !== currentPassword) return { ok: false, error: "Current password is incorrect." };
+        if (newPassword.length < 6) return { ok: false, error: "New password must be at least 6 characters." };
+        if (newPassword === currentPassword) return { ok: false, error: "New password must be different." };
+        set({ users: users.map((u) => (u.id === id ? { ...u, password: newPassword } : u)) });
+        return { ok: true };
+      },
+
       deleteAccount: () => {
         const id = get().currentUserId;
         if (!id) return;
