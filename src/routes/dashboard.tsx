@@ -86,8 +86,35 @@ function Dashboard() {
             <Stat label="Done" value={`${completed} · ${completionPct}%`} icon={TrendingUp} />
             <Stat label="This week" value={formatDuration(weekSeconds)} icon={ChevronRight} />
           </div>
+
+          <div className="mt-6 flex items-center gap-4 rounded-xl border border-border bg-card p-5">
+            <div
+              className={`grid h-14 w-14 place-items-center rounded-full ${liveStreak > 0 ? "bg-[oklch(0.7_0.18_145)]/15" : "bg-muted"}`}
+              aria-hidden
+            >
+              <Flame
+                className={`h-7 w-7 ${liveStreak > 0 ? "" : "opacity-40"}`}
+                style={liveStreak > 0 ? { color: "oklch(0.7 0.2 145)", fill: "oklch(0.7 0.2 145)" } : undefined}
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Learning streak</p>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-4xl tabular tracking-tight" style={liveStreak > 0 ? { color: "oklch(0.7 0.2 145)" } : undefined}>
+                  {liveStreak}
+                </span>
+                <span className="text-sm text-muted-foreground">{liveStreak === 1 ? "video" : "videos"}</span>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {liveStreak > 0
+                  ? "Watch another video within 24h to keep the flame alive."
+                  : "Start a video to spark your streak."}
+              </p>
+            </div>
+          </div>
         </div>
       </section>
+
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-8">
         <div className="mb-6 flex items-end justify-between gap-4">
