@@ -30,7 +30,17 @@ function VideoPage() {
   const { id } = Route.useParams();
   const video = useStore((s) => s.videos.find((v) => v.id === id));
   const categories = useStore((s) => s.categories);
-  const otherInCategory = useStore((s) => s.videos.filter((v) => v.id !== id && v.categoryId === video?.categoryId));
+  const categoryIdForVideo = video?.categoryId ?? null;
+  const otherInCategoryIds = useStore((s) =>
+    s.videos
+      .filter((v) => v.id !== id && v.categoryId === categoryIdForVideo)
+      .map((v) => v.id)
+      .join(","),
+  );
+  const allVideos = useStore((s) => s.videos);
+  const otherInCategory = otherInCategoryIds
+    ? otherInCategoryIds.split(",").map((vid) => allVideos.find((v) => v.id === vid)!).filter(Boolean)
+    : [];
   const updateVideo = useStore((s) => s.updateVideo);
   const toggleComplete = useStore((s) => s.toggleComplete);
   const deleteVideo = useStore((s) => s.deleteVideo);
