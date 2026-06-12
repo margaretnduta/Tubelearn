@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Navigate, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 type AuthSearch = { mode?: "signin" | "signup"; redirect?: string };
