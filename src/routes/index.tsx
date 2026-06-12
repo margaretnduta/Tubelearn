@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight, Mail, Github, Sparkles, Smartphone, Download } from "lucide-react";
+import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight, Mail, Github, Sparkles, Smartphone } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { InstallAppButton } from "@/components/InstallAppButton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
