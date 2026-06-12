@@ -70,7 +70,7 @@ function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-4 px-4 pb-24 sm:grid-cols-3 sm:px-8">
+      <section id="features" className="mx-auto grid max-w-5xl gap-4 px-4 pb-24 sm:grid-cols-3 sm:px-8">
         <Feature icon={Layers} title="Categories" body="Create shelves per subject. Paste any YouTube link and sort it in." />
         <Feature icon={Clock} title="Minutes tracked" body="Every session counts. See exactly how long you've spent on each topic." />
         <Feature icon={CheckCircle2} title="New → In Progress → Done" body="Each video has a real state. Finish the shelf, finish the subject." />
