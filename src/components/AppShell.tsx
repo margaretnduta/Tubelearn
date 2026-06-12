@@ -126,10 +126,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
               ) : (
                 <>
-                  <FooterLink to="/auth" search={{ mode: "signin" } as never}>Sign in</FooterLink>
-                  <FooterLink to="/auth" search={{ mode: "signup" } as never}>Create account</FooterLink>
-                </>
-              )}
+                  <Link to="/auth" search={{ mode: "signin" }} className="text-xs text-muted-foreground transition-colors hover:text-foreground">Sign in</Link>
+                  <Link to="/auth" search={{ mode: "signup" }} className="text-xs text-muted-foreground transition-colors hover:text-foreground">Create account</Link>
+                </>)}
               <FooterLink to="/">Home</FooterLink>
             </FooterCol>
             <FooterCol title="Connect">
