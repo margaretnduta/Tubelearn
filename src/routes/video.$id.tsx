@@ -42,11 +42,12 @@ function VideoPage() {
 
   // Track watch time while page is open
   useEffect(() => {
+    if (!id) return;
     sessionStart.current = Date.now();
     const flush = () => {
-      if (sessionStart.current && video) {
+      if (sessionStart.current) {
         const sec = Math.round((Date.now() - sessionStart.current) / 1000);
-        if (sec >= 5) logSession(video.id, sec);
+        if (sec >= 5) logSession(id, sec);
         sessionStart.current = Date.now();
       }
     };
@@ -60,7 +61,12 @@ function VideoPage() {
       window.removeEventListener("beforeunload", onHide);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, [video?.id, logSession, video]);
+    // Intentionally only depends on the video id; logSession is a stable
+    // zustand action and including `video` causes a re-render loop because
+    // each logSession() call mutates state -> selector returns a new ref ->
+    // effect cleanup runs -> flush() logs again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: `/video/${id}` }} />;
   if (!video) throw notFound();
