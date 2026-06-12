@@ -29,8 +29,12 @@ function Dashboard() {
   const categories = useStore((s) => s.categories);
   const videos = useStore((s) => s.videos);
   const sessions = useStore((s) => s.sessions);
+  const streak = useStore((s) => s.streak);
+  const lastStreakAt = useStore((s) => s.lastStreakAt);
   const deleteCategory = useStore((s) => s.deleteCategory);
   const [openCat, setOpenCat] = useState(false);
+
+  const liveStreak = lastStreakAt && Date.now() - lastStreakAt <= 24 * 60 * 60 * 1000 ? streak : 0;
 
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/dashboard" }} />;
 
