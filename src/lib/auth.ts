@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 export interface AuthUser {
   id: string;
   name: string;
+  username: string;
   email: string;
   createdAt: number;
 }
@@ -21,9 +22,18 @@ interface AuthState {
   signIn: (email: string, password: string) => { ok: true; user: AuthUser } | { ok: false; error: string };
   signOut: () => void;
   currentUser: () => AuthUser | null;
+  updateProfile: (patch: { name?: string; username?: string; email?: string }) => { ok: true } | { ok: false; error: string };
+  deleteAccount: () => void;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+const slugifyUsername = (raw: string) =>
+  raw
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 20) || `user_${uid()}`;
 
 export const useAuth = create<AuthState>()(
   persist(
@@ -37,7 +47,10 @@ export const useAuth = create<AuthState>()(
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { ok: false, error: "Please enter a valid email." };
         if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
         if (get().users.some((u) => u.email === e)) return { ok: false, error: "An account with this email already exists." };
-        const user: StoredUser = { id: uid(), name: name.trim().slice(0, 60), email: e, password, createdAt: Date.now() };
+        let username = slugifyUsername(name);
+        const taken = new Set(get().users.map((u) => u.username));
+        while (taken.has(username)) username = `${slugifyUsername(name)}_${uid().slice(0, 3)}`;
+        const user: StoredUser = { id: uid(), name: name.trim().slice(0, 60), username, email: e, password, createdAt: Date.now() };
         set((s) => ({ users: [...s.users, user], currentUserId: user.id }));
         const { password: _p, ...pub } = user;
         return { ok: true, user: pub };
@@ -60,7 +73,43 @@ export const useAuth = create<AuthState>()(
         const u = get().users.find((x) => x.id === id);
         if (!u) return null;
         const { password: _p, ...pub } = u;
-        return pub;
+        // Backfill username for accounts created before usernames existed.
+        return { ...pub, username: pub.username || slugifyUsername(pub.name || pub.email) };
+      },
+
+      updateProfile: (patch) => {
+        const id = get().currentUserId;
+        if (!id) return { ok: false, error: "Not signed in." };
+        const users = get().users;
+        const current = users.find((u) => u.id === id);
+        if (!current) return { ok: false, error: "Account not found." };
+
+        const next: Partial<StoredUser> = {};
+        if (patch.name !== undefined) {
+          const n = patch.name.trim();
+          if (!n) return { ok: false, error: "Name can't be empty." };
+          next.name = n.slice(0, 60);
+        }
+        if (patch.username !== undefined) {
+          const u = slugifyUsername(patch.username);
+          if (u.length < 3) return { ok: false, error: "Username must be at least 3 characters." };
+          if (users.some((x) => x.id !== id && x.username === u)) return { ok: false, error: "That username is taken." };
+          next.username = u;
+        }
+        if (patch.email !== undefined) {
+          const e = patch.email.trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { ok: false, error: "Please enter a valid email." };
+          if (users.some((x) => x.id !== id && x.email === e)) return { ok: false, error: "That email is already in use." };
+          next.email = e;
+        }
+        set({ users: users.map((u) => (u.id === id ? { ...u, ...next } : u)) });
+        return { ok: true };
+      },
+
+      deleteAccount: () => {
+        const id = get().currentUserId;
+        if (!id) return;
+        set((s) => ({ users: s.users.filter((u) => u.id !== id), currentUserId: null }));
       },
     }),
     { name: "tubelearn-auth-v1" },
