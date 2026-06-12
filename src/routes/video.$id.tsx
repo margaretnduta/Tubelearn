@@ -11,7 +11,7 @@ export const Route = createFileRoute("/video/$id")({
     <AppShell>
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">
         <h1 className="font-display text-3xl">Video not found</h1>
-        <Link to="/" className="mt-4 inline-block text-sm text-[var(--ember)]">← Back to dashboard</Link>
+        <Link to="/dashboard" className="mt-4 inline-block text-sm text-[var(--ember)]">← Back to dashboard</Link>
       </div>
     </AppShell>
   ),
