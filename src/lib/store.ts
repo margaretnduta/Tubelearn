@@ -32,7 +32,7 @@ export interface SessionLog {
   at: number;
 }
 
-interface LumenState {
+interface AppState {
   theme: "dark" | "light";
   categories: Category[];
   videos: Video[];
@@ -73,7 +73,7 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: uid(), name: "Quick Hits",  description: "Short videos worth revisiting.",         color: "oklch(0.72 0.12 230)", icon: "✦", createdAt: Date.now() + 2 },
 ];
 
-export const useStore = create<LumenState>()(
+export const useStore = create<AppState>()(
   persist(
     (set) => ({
       theme: "dark",
