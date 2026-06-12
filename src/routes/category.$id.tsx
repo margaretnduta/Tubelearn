@@ -37,7 +37,7 @@ function CategoryPage() {
   const userId = useAuth((s) => s.currentUserId);
   const { id } = Route.useParams();
   const category = useStore((s) => s.categories.find((c) => c.id === id));
-  const videos = useStore((s) => s.videos.filter((v) => v.categoryId === id));
+  const videos = useStore((s) => s.videos).filter((v) => v.categoryId === id);
   const deleteCategory = useStore((s) => s.deleteCategory);
   const [openAdd, setOpenAdd] = useState(false);
 
