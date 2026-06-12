@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogOut, Trash2, UserCircle2, Save } from "lucide-react";
+import { LogOut, Trash2, UserCircle2, Save, KeyRound, Eye, EyeOff } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
 
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const user = useAuth((s) => (s.currentUserId ? s.users.find((u) => u.id === s.currentUserId) : null));
   const updateProfile = useAuth((s) => s.updateProfile);
+  const changePassword = useAuth((s) => s.changePassword);
   const signOut = useAuth((s) => s.signOut);
   const deleteAccount = useAuth((s) => s.deleteAccount);
   const navigate = useNavigate();
@@ -25,6 +26,14 @@ function ProfilePage() {
   const [username, setUsername] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   if (!user) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/profile" }} />;
 
@@ -38,6 +47,23 @@ function ProfilePage() {
   const onLogout = () => {
     signOut();
     navigate({ to: "/" });
+  };
+
+  const onChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPw !== confirmPw) {
+      setPwMsg({ kind: "err", text: "New passwords don't match." });
+      return;
+    }
+    const result = changePassword(currentPw, newPw);
+    if (!result.ok) {
+      setPwMsg({ kind: "err", text: result.error });
+      return;
+    }
+    setPwMsg({ kind: "ok", text: "Password updated." });
+    setCurrentPw("");
+    setNewPw("");
+    setConfirmPw("");
   };
 
   const onDelete = () => {
@@ -109,6 +135,57 @@ function ProfilePage() {
           </button>
         </form>
 
+        <form onSubmit={onChangePassword} className="mt-8 space-y-5 rounded-2xl border border-border bg-card p-6">
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Change password</p>
+          </div>
+          <PasswordField
+            label="Current password"
+            value={currentPw}
+            onChange={setCurrentPw}
+            show={showCurrent}
+            toggle={() => setShowCurrent((v) => !v)}
+            autoComplete="current-password"
+          />
+          <PasswordField
+            label="New password"
+            value={newPw}
+            onChange={setNewPw}
+            show={showNew}
+            toggle={() => setShowNew((v) => !v)}
+            autoComplete="new-password"
+          />
+          <PasswordField
+            label="Confirm new password"
+            value={confirmPw}
+            onChange={setConfirmPw}
+            show={showConfirm}
+            toggle={() => setShowConfirm((v) => !v)}
+            autoComplete="new-password"
+          />
+
+          {pwMsg && (
+            <div
+              className={`rounded-md border px-3 py-2 text-sm ${
+                pwMsg.kind === "ok"
+                  ? "border-[var(--moss)]/40 bg-[var(--moss)]/10 text-foreground"
+                  : "border-destructive/40 bg-destructive/10 text-destructive"
+              }`}
+            >
+              {pwMsg.text}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background"
+          >
+            <KeyRound className="h-4 w-4" /> Update password
+          </button>
+        </form>
+
+
         <div className="mt-8 rounded-2xl border border-border bg-card p-6">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Session</p>
           <button
@@ -142,5 +219,47 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
       {children}
     </label>
+  );
+}
+
+function PasswordField({
+  label,
+  value,
+  onChange,
+  show,
+  toggle,
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  toggle: () => void;
+  autoComplete: string;
+}) {
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value.slice(0, 120))}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm outline-none ring-ring focus:ring-2"
+          autoComplete={autoComplete}
+          minLength={6}
+          required
+        />
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={show ? "Hide password" : "Show password"}
+          aria-pressed={show}
+          className="absolute inset-y-0 right-0 grid w-10 place-items-center text-muted-foreground hover:text-foreground"
+          tabIndex={-1}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </Field>
   );
 }

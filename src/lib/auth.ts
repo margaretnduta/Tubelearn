@@ -23,6 +23,7 @@ interface AuthState {
   signOut: () => void;
   currentUser: () => AuthUser | null;
   updateProfile: (patch: { name?: string; username?: string; email?: string }) => { ok: true } | { ok: false; error: string };
+  changePassword: (currentPassword: string, newPassword: string) => { ok: true } | { ok: false; error: string };
   deleteAccount: () => void;
 }
 
@@ -103,6 +104,19 @@ export const useAuth = create<AuthState>()(
           next.email = e;
         }
         set({ users: users.map((u) => (u.id === id ? { ...u, ...next } : u)) });
+        return { ok: true };
+      },
+
+      changePassword: (currentPassword, newPassword) => {
+        const id = get().currentUserId;
+        if (!id) return { ok: false, error: "Not signed in." };
+        const users = get().users;
+        const current = users.find((u) => u.id === id);
+        if (!current) return { ok: false, error: "Account not found." };
+        if (current.password !== currentPassword) return { ok: false, error: "Current password is incorrect." };
+        if (newPassword.length < 6) return { ok: false, error: "New password must be at least 6 characters." };
+        if (newPassword === currentPassword) return { ok: false, error: "New password must be different." };
+        set({ users: users.map((u) => (u.id === id ? { ...u, password: newPassword } : u)) });
         return { ok: true };
       },
 
