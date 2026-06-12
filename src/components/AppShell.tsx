@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap } from "lucide-react";
+import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap, Home, Github, Mail } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const navItems = [
+    { to: "/", label: "Home", icon: Home, exact: true },
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { to: "/library", label: "Library", icon: Library, exact: false },
   ];
