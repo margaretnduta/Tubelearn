@@ -21,7 +21,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { mode: initialMode, redirect } = useSearch({ from: "/auth" });
+  const { mode: initialMode } = useSearch({ from: "/auth" });
   const navigate = useNavigate();
   const currentUserId = useAuth((s) => s.currentUserId);
   const signUp = useAuth((s) => s.signUp);
