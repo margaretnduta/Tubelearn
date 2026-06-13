@@ -35,7 +35,7 @@ Safari does not fire an install prompt. Tap the **Install app** button — it op
 
 ### Desktop Safari / Firefox
 These browsers do not currently support PWA install. Use Chrome or Edge on desktop, or pin the tab.
-
+YES N/B SAFARI AND FIREFOX 
 ---
 
 ## Tech stack
