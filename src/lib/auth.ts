@@ -1,5 +1,8 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
+import { runMigrationIfNeeded, clearLocalData } from "@/lib/migration";
+import { useStore } from "@/lib/store";
 
 export interface AuthUser {
   id: string;
@@ -9,134 +12,205 @@ export interface AuthUser {
   createdAt: number;
 }
 
-interface StoredUser extends AuthUser {
-  // NOTE: This is a local-only demo auth. Passwords are stored in localStorage
-  // unencrypted. Do not reuse a real password here.
-  password: string;
-}
+type Result<T = void> = ({ ok: true } & T) | { ok: false; error: string };
 
 interface AuthState {
-  users: StoredUser[];
+  users: AuthUser[]; // length 0 or 1 — kept as array for existing selectors
   currentUserId: string | null;
-  signUp: (name: string, email: string, password: string) => { ok: true; user: AuthUser } | { ok: false; error: string };
-  signIn: (email: string, password: string) => { ok: true; user: AuthUser } | { ok: false; error: string };
-  signOut: () => void;
+  loading: boolean;
+
+  signUp: (name: string, email: string, password: string) => Promise<Result<{ user: AuthUser }>>;
+  signIn: (email: string, password: string) => Promise<Result<{ user: AuthUser }>>;
+  signInWithGoogle: () => Promise<Result>;
+  signOut: () => Promise<void>;
   currentUser: () => AuthUser | null;
-  updateProfile: (patch: { name?: string; username?: string; email?: string }) => { ok: true } | { ok: false; error: string };
-  changePassword: (currentPassword: string, newPassword: string) => { ok: true } | { ok: false; error: string };
-  resetPassword: (email: string, newPassword: string) => { ok: true } | { ok: false; error: string };
-  deleteAccount: () => void;
+  updateProfile: (patch: { name?: string; username?: string; email?: string }) => Promise<Result>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<Result>;
+  resetPassword: (email: string, _newPassword?: string) => Promise<Result>;
+  deleteAccount: () => Promise<void>;
+
+  // Internal — set from onAuthStateChange listener
+  _setProfile: (user: AuthUser | null) => void;
 }
 
-const uid = () => Math.random().toString(36).slice(2, 10);
-
 const slugifyUsername = (raw: string) =>
-  raw
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 20) || `user_${uid()}`;
+  raw.toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 20) ||
+  `user_${Math.random().toString(36).slice(2, 8)}`;
 
-export const useAuth = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      users: [],
-      currentUserId: null,
+export const useAuth = create<AuthState>()((set, get) => ({
+  users: [],
+  currentUserId: null,
+  loading: true,
 
-      signUp: (name, email, password) => {
-        const e = email.trim().toLowerCase();
-        if (!name.trim()) return { ok: false, error: "Please enter your name." };
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { ok: false, error: "Please enter a valid email." };
-        if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
-        if (get().users.some((u) => u.email === e)) return { ok: false, error: "An account with this email already exists." };
-        let username = slugifyUsername(name);
-        const taken = new Set(get().users.map((u) => u.username));
-        while (taken.has(username)) username = `${slugifyUsername(name)}_${uid().slice(0, 3)}`;
-        const user: StoredUser = { id: uid(), name: name.trim().slice(0, 60), username, email: e, password, createdAt: Date.now() };
-        set((s) => ({ users: [...s.users, user], currentUserId: user.id }));
-        const { password: _p, ...pub } = user;
-        return { ok: true, user: pub };
+  _setProfile: (user) =>
+    set({ users: user ? [user] : [], currentUserId: user?.id ?? null, loading: false }),
+
+  signUp: async (name, email, password) => {
+    const e = email.trim().toLowerCase();
+    if (!name.trim()) return { ok: false, error: "Please enter your name." };
+    if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
+    const emailRedirectTo = typeof window !== "undefined" ? window.location.origin + "/dashboard" : undefined;
+    const { data, error } = await supabase.auth.signUp({
+      email: e,
+      password,
+      options: {
+        emailRedirectTo,
+        data: { name: name.trim().slice(0, 60), username: slugifyUsername(name) },
       },
+    });
+    if (error) return { ok: false, error: error.message };
+    if (!data.user) return { ok: false, error: "Signup failed." };
+    // Session may or may not exist depending on email confirmation setting.
+    const user: AuthUser = {
+      id: data.user.id,
+      name: name.trim(),
+      username: slugifyUsername(name),
+      email: e,
+      createdAt: Date.now(),
+    };
+    return { ok: true, user };
+  },
 
-      signIn: (email, password) => {
-        const e = email.trim().toLowerCase();
-        const user = get().users.find((u) => u.email === e);
-        if (!user || user.password !== password) return { ok: false, error: "Wrong email or password." };
-        set({ currentUserId: user.id });
-        const { password: _p, ...pub } = user;
-        return { ok: true, user: pub };
-      },
+  signIn: async (email, password) => {
+    const e = email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: e, password });
+    if (error) return { ok: false, error: error.message };
+    if (!data.user) return { ok: false, error: "Sign in failed." };
+    const profile = await fetchProfile(data.user.id);
+    return { ok: true, user: profile ?? { id: data.user.id, name: "", username: "", email: e, createdAt: Date.now() } };
+  },
 
-      signOut: () => set({ currentUserId: null }),
+  signInWithGoogle: async () => {
+    if (typeof window === "undefined") return { ok: false, error: "Unavailable" };
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    if ((result as { error?: unknown }).error) {
+      const err = (result as { error: Error }).error;
+      return { ok: false, error: err.message || "Google sign-in failed." };
+    }
+    return { ok: true };
+  },
 
-      currentUser: () => {
-        const id = get().currentUserId;
-        if (!id) return null;
-        const u = get().users.find((x) => x.id === id);
-        if (!u) return null;
-        const { password: _p, ...pub } = u;
-        // Backfill username for accounts created before usernames existed.
-        return { ...pub, username: pub.username || slugifyUsername(pub.name || pub.email) };
-      },
+  signOut: async () => {
+    await supabase.auth.signOut();
+    useStore.getState().resetForSignOut();
+    set({ users: [], currentUserId: null });
+  },
 
-      updateProfile: (patch) => {
-        const id = get().currentUserId;
-        if (!id) return { ok: false, error: "Not signed in." };
-        const users = get().users;
-        const current = users.find((u) => u.id === id);
-        if (!current) return { ok: false, error: "Account not found." };
+  currentUser: () => {
+    const id = get().currentUserId;
+    if (!id) return null;
+    return get().users.find((u) => u.id === id) ?? null;
+  },
 
-        const next: Partial<StoredUser> = {};
-        if (patch.name !== undefined) {
-          const n = patch.name.trim();
-          if (!n) return { ok: false, error: "Name can't be empty." };
-          next.name = n.slice(0, 60);
-        }
-        if (patch.username !== undefined) {
-          const u = slugifyUsername(patch.username);
-          if (u.length < 3) return { ok: false, error: "Username must be at least 3 characters." };
-          if (users.some((x) => x.id !== id && x.username === u)) return { ok: false, error: "That username is taken." };
-          next.username = u;
-        }
-        if (patch.email !== undefined) {
-          const e = patch.email.trim().toLowerCase();
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return { ok: false, error: "Please enter a valid email." };
-          if (users.some((x) => x.id !== id && x.email === e)) return { ok: false, error: "That email is already in use." };
-          next.email = e;
-        }
-        set({ users: users.map((u) => (u.id === id ? { ...u, ...next } : u)) });
-        return { ok: true };
-      },
+  updateProfile: async (patch) => {
+    const id = get().currentUserId;
+    if (!id) return { ok: false, error: "Not signed in." };
+    const next: Record<string, string> = {};
+    if (patch.name !== undefined) {
+      const n = patch.name.trim();
+      if (!n) return { ok: false, error: "Name can't be empty." };
+      next.name = n.slice(0, 60);
+    }
+    if (patch.username !== undefined) {
+      const u = slugifyUsername(patch.username);
+      if (u.length < 3) return { ok: false, error: "Username must be at least 3 characters." };
+      next.username = u;
+    }
+    if (patch.email !== undefined) {
+      const em = patch.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return { ok: false, error: "Please enter a valid email." };
+      const { error: authErr } = await supabase.auth.updateUser({ email: em });
+      if (authErr) return { ok: false, error: authErr.message };
+      next.email = em;
+    }
+    if (Object.keys(next).length) {
+      const { error } = await supabase.from("profiles").update(next).eq("id", id);
+      if (error) {
+        if (error.code === "23505") return { ok: false, error: "That username is already taken." };
+        return { ok: false, error: error.message };
+      }
+      const cur = get().users.find((u) => u.id === id);
+      if (cur) set({ users: [{ ...cur, ...next }] });
+    }
+    return { ok: true };
+  },
 
-  resetPassword: (email: string, newPassword: string) => {
-        const e = email.trim().toLowerCase();
-        const users = get().users;
-        const user = users.find((u) => u.email === e);
-        if (!user) return { ok: false as const, error: "No account exists on this device for that email." };
-        if (newPassword.length < 6) return { ok: false as const, error: "New password must be at least 6 characters." };
-        set({ users: users.map((u) => (u.id === user.id ? { ...u, password: newPassword } : u)) });
-        return { ok: true as const };
-      },
+  changePassword: async (_currentPassword, newPassword) => {
+    if (newPassword.length < 6) return { ok: false, error: "New password must be at least 6 characters." };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  },
 
-      changePassword: (currentPassword, newPassword) => {
-        const id = get().currentUserId;
-        if (!id) return { ok: false, error: "Not signed in." };
-        const users = get().users;
-        const current = users.find((u) => u.id === id);
-        if (!current) return { ok: false, error: "Account not found." };
-        if (current.password !== currentPassword) return { ok: false, error: "Current password is incorrect." };
-        if (newPassword.length < 6) return { ok: false, error: "New password must be at least 6 characters." };
-        if (newPassword === currentPassword) return { ok: false, error: "New password must be different." };
-        set({ users: users.map((u) => (u.id === id ? { ...u, password: newPassword } : u)) });
-        return { ok: true };
-      },
+  resetPassword: async (email) => {
+    const redirectTo = typeof window !== "undefined" ? window.location.origin + "/auth" : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  },
 
-      deleteAccount: () => {
-        const id = get().currentUserId;
-        if (!id) return;
-        set((s) => ({ users: s.users.filter((u) => u.id !== id), currentUserId: null }));
-      },
-    }),
-    { name: "tubelearn-auth-v1" },
-  ),
-);
+  deleteAccount: async () => {
+    const id = get().currentUserId;
+    if (!id) return;
+    try {
+      const { deleteMyAccount } = await import("@/lib/account.functions");
+      await deleteMyAccount();
+    } catch (e) {
+      console.error("[deleteAccount]", e);
+    }
+    await supabase.auth.signOut();
+    clearLocalData(id);
+    useStore.getState().resetForSignOut();
+    set({ users: [], currentUserId: null });
+  },
+}));
+
+async function fetchProfile(id: string): Promise<AuthUser | null> {
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    name: data.name ?? "",
+    username: data.username ?? "",
+    email: data.email ?? "",
+    createdAt: new Date(data.created_at).getTime(),
+  };
+}
+
+let _initialized = false;
+
+/** Call once on app mount. Wires supabase.auth listener → useAuth store, runs migration, hydrates data store. */
+export function initAuth() {
+  if (_initialized || typeof window === "undefined") return;
+  _initialized = true;
+
+  const handle = async (userId: string | null) => {
+    if (!userId) {
+      useAuth.getState()._setProfile(null);
+      useStore.getState().resetForSignOut();
+      return;
+    }
+    // Ensure profile exists (trigger normally creates it, but retry a few times if lagging).
+    let profile: AuthUser | null = null;
+    for (let i = 0; i < 4 && !profile; i++) {
+      profile = await fetchProfile(userId);
+      if (!profile) await new Promise((r) => setTimeout(r, 300));
+    }
+    useAuth.getState()._setProfile(profile);
+    try {
+      await runMigrationIfNeeded(userId);
+    } catch (e) {
+      console.warn("[migration]", e);
+    }
+    await useStore.getState().hydrateFromCloud(userId);
+  };
+
+  supabase.auth.getSession().then(({ data }) => {
+    handle(data.session?.user?.id ?? null);
+  });
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
+    handle(session?.user?.id ?? null);
+  });
+}
