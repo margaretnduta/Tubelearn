@@ -122,6 +122,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useEffect(() => {
     registerInstallSW();
+    import("@/lib/auth").then((m) => m.initAuth());
   }, []);
   return (
     <QueryClientProvider client={queryClient}>
