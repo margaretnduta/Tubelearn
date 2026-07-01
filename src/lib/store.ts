@@ -1,17 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Category {
   id: string;
   name: string;
   description?: string;
-  color: string; // oklch swatch token name from PALETTE
-  icon: string;  // emoji or letter
+  color: string;
+  icon: string;
   createdAt: number;
 }
 
 export interface Video {
-  id: string;            // local uuid
+  id: string;
   youtubeId: string;
   title: string;
   channel: string;
@@ -40,7 +41,9 @@ interface AppState {
 
   streak: number;
   lastStreakAt: number | null;
-  streakWatchedIds: string[]; // videos counted in the current streak
+  streakWatchedIds: string[];
+
+  hydrated: boolean;
 
   toggleTheme: () => void;
   setTheme: (t: "dark" | "light") => void;
@@ -58,6 +61,9 @@ interface AppState {
   logSession: (videoId: string, seconds: number) => void;
   bumpStreak: (videoId: string) => void;
   getCurrentStreak: () => number;
+
+  hydrateFromCloud: (userId: string) => Promise<void>;
+  resetForSignOut: () => void;
 }
 
 const daysBetween = (a: number, b: number) => {
@@ -66,106 +72,226 @@ const daysBetween = (a: number, b: number) => {
   return Math.round((db.getTime() - da.getTime()) / 86400000);
 };
 
-const uid = () => Math.random().toString(36).slice(2, 10);
+const newId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 export const PALETTE = [
-  { name: "ember",   swatch: "oklch(0.78 0.15 60)"  },
-  { name: "moss",    swatch: "oklch(0.7 0.13 160)"  },
-  { name: "sky",     swatch: "oklch(0.72 0.12 230)" },
-  { name: "rose",    swatch: "oklch(0.72 0.16 20)"  },
-  { name: "violet",  swatch: "oklch(0.68 0.15 295)" },
-  { name: "sand",    swatch: "oklch(0.78 0.07 85)"  },
-  { name: "teal",    swatch: "oklch(0.7 0.1 195)"   },
-  { name: "clay",    swatch: "oklch(0.6 0.12 40)"   },
+  { name: "ember",  swatch: "oklch(0.78 0.15 60)"  },
+  { name: "moss",   swatch: "oklch(0.7 0.13 160)"  },
+  { name: "sky",    swatch: "oklch(0.72 0.12 230)" },
+  { name: "rose",   swatch: "oklch(0.72 0.16 20)"  },
+  { name: "violet", swatch: "oklch(0.68 0.15 295)" },
+  { name: "sand",   swatch: "oklch(0.78 0.07 85)"  },
+  { name: "teal",   swatch: "oklch(0.7 0.1 195)"   },
+  { name: "clay",   swatch: "oklch(0.6 0.12 40)"   },
 ];
 
-const DEFAULT_CATEGORIES: Category[] = [
-  { id: uid(), name: "Foundations", description: "Core concepts you keep coming back to.", color: "oklch(0.78 0.15 60)",  icon: "◐", createdAt: Date.now() },
-  { id: uid(), name: "Deep Work",   description: "Long-form lectures and series.",         color: "oklch(0.7 0.13 160)",  icon: "◇", createdAt: Date.now() + 1 },
-  { id: uid(), name: "Quick Hits",  description: "Short videos worth revisiting.",         color: "oklch(0.72 0.12 230)", icon: "✦", createdAt: Date.now() + 2 },
-];
+// Fire-and-forget helper — logs errors but never blocks UI.
+function bg(promise: PromiseLike<{ error: unknown }>, label: string) {
+  Promise.resolve(promise).then((r) => {
+    if (r && (r as { error?: unknown }).error) console.warn(`[store:${label}]`, (r as { error: unknown }).error);
+  }).catch((e) => console.warn(`[store:${label}]`, e));
+}
+
+function currentUserId(): string | null {
+  // Read from useAuth without importing at module scope (avoids cycle).
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require("@/lib/auth") as { useAuth: { getState: () => { currentUserId: string | null } } };
+    return mod.useAuth.getState().currentUserId;
+  } catch {
+    return null;
+  }
+}
 
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       theme: "dark",
-      categories: DEFAULT_CATEGORIES,
+      categories: [],
       videos: [],
       sessions: [],
-
       streak: 0,
       lastStreakAt: null,
       streakWatchedIds: [],
+      hydrated: false,
 
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
       setTheme: (theme) => set({ theme }),
 
       addCategory: (c) => {
-        const cat: Category = { ...c, id: uid(), createdAt: Date.now() };
+        const cat: Category = { ...c, id: newId(), createdAt: Date.now() };
         set((s) => ({ categories: [...s.categories, cat] }));
+        const uid = currentUserId();
+        if (uid) {
+          bg(
+            supabase.from("categories").insert({
+              id: cat.id,
+              user_id: uid,
+              name: cat.name,
+              description: cat.description ?? null,
+              color: cat.color,
+              icon: cat.icon,
+              created_at: new Date(cat.createdAt).toISOString(),
+            }),
+            "addCategory",
+          );
+        }
         return cat;
       },
-      updateCategory: (id, patch) =>
-        set((s) => ({ categories: s.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
-      deleteCategory: (id) =>
+      updateCategory: (id, patch) => {
+        set((s) => ({ categories: s.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+        const uid = currentUserId();
+        if (uid) {
+          const p: Record<string, unknown> = {};
+          if (patch.name !== undefined) p.name = patch.name;
+          if (patch.description !== undefined) p.description = patch.description;
+          if (patch.color !== undefined) p.color = patch.color;
+          if (patch.icon !== undefined) p.icon = patch.icon;
+          bg(supabase.from("categories").update(p).eq("id", id).eq("user_id", uid), "updateCategory");
+        }
+      },
+      deleteCategory: (id) => {
         set((s) => ({
           categories: s.categories.filter((c) => c.id !== id),
           videos: s.videos.map((v) => (v.categoryId === id ? { ...v, categoryId: null } : v)),
-        })),
+        }));
+        const uid = currentUserId();
+        if (uid) bg(supabase.from("categories").delete().eq("id", id).eq("user_id", uid), "deleteCategory");
+      },
 
       addVideo: (v) => {
-        const vid: Video = { ...v, id: uid(), addedAt: Date.now(), completed: false, watchedSeconds: 0 };
+        const vid: Video = { ...v, id: newId(), addedAt: Date.now(), completed: false, watchedSeconds: 0 };
         set((s) => ({ videos: [vid, ...s.videos] }));
+        const uid = currentUserId();
+        if (uid) {
+          bg(
+            supabase.from("videos").insert({
+              id: vid.id,
+              user_id: uid,
+              youtube_id: vid.youtubeId,
+              title: vid.title,
+              channel: vid.channel,
+              channel_url: vid.channelUrl ?? null,
+              thumbnail: vid.thumbnail,
+              category_id: vid.categoryId,
+              added_at: new Date(vid.addedAt).toISOString(),
+            }),
+            "addVideo",
+          );
+        }
         return vid;
       },
-      updateVideo: (id, patch) =>
-        set((s) => ({ videos: s.videos.map((v) => (v.id === id ? { ...v, ...patch } : v)) })),
-      deleteVideo: (id) =>
+      updateVideo: (id, patch) => {
+        set((s) => ({ videos: s.videos.map((v) => (v.id === id ? { ...v, ...patch } : v)) }));
+        const uid = currentUserId();
+        if (uid) {
+          const p: Record<string, unknown> = {};
+          if (patch.title !== undefined) p.title = patch.title;
+          if (patch.channel !== undefined) p.channel = patch.channel;
+          if (patch.thumbnail !== undefined) p.thumbnail = patch.thumbnail;
+          if (patch.categoryId !== undefined) p.category_id = patch.categoryId;
+          if (patch.completed !== undefined) p.completed = patch.completed;
+          if (patch.watchedSeconds !== undefined) p.watched_seconds = patch.watchedSeconds;
+          if (patch.notes !== undefined) p.notes = patch.notes;
+          if (patch.lastWatchedAt !== undefined) p.last_watched_at = new Date(patch.lastWatchedAt).toISOString();
+          bg(supabase.from("videos").update(p).eq("id", id).eq("user_id", uid), "updateVideo");
+        }
+      },
+      deleteVideo: (id) => {
         set((s) => ({
           videos: s.videos.filter((v) => v.id !== id),
           sessions: s.sessions.filter((sess) => sess.videoId !== id),
-        })),
-      toggleComplete: (id) =>
+        }));
+        const uid = currentUserId();
+        if (uid) bg(supabase.from("videos").delete().eq("id", id).eq("user_id", uid), "deleteVideo");
+      },
+      toggleComplete: (id) => {
+        const now = Date.now();
+        const next = !get().videos.find((v) => v.id === id)?.completed;
         set((s) => ({
           videos: s.videos.map((v) =>
-            v.id === id ? { ...v, completed: !v.completed, lastWatchedAt: Date.now() } : v,
+            v.id === id ? { ...v, completed: next, lastWatchedAt: now } : v,
           ),
-        })),
-      assignCategory: (videoId, categoryId) =>
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          bg(
+            supabase.from("videos").update({ completed: next, last_watched_at: new Date(now).toISOString() })
+              .eq("id", id).eq("user_id", uid),
+            "toggleComplete",
+          );
+        }
+      },
+      assignCategory: (videoId, categoryId) => {
         set((s) => ({
           videos: s.videos.map((v) => (v.id === videoId ? { ...v, categoryId } : v)),
-        })),
-
-      logSession: (videoId, seconds) =>
-        set((s) => ({
-          sessions: [{ id: uid(), videoId, seconds, at: Date.now() }, ...s.sessions].slice(0, 500),
-          videos: s.videos.map((v) =>
-            v.id === videoId
-              ? { ...v, watchedSeconds: v.watchedSeconds + seconds, lastWatchedAt: Date.now() }
-              : v,
-          ),
-        })),
-
-      bumpStreak: (_videoId) => {
-        const now = Date.now();
-        const { lastStreakAt, streak } = get();
-        if (!lastStreakAt) {
-          set({ streak: 1, lastStreakAt: now, streakWatchedIds: [] });
-          return;
-        }
-        const diff = daysBetween(lastStreakAt, now);
-        if (diff === 0) {
-          // Already counted today — no change.
-          return;
-        }
-        if (diff === 1) {
-          set({ streak: streak + 1, lastStreakAt: now, streakWatchedIds: [] });
-          return;
-        }
-        // Missed a day or more — reset.
-        set({ streak: 1, lastStreakAt: now, streakWatchedIds: [] });
+        }));
+        const uid = currentUserId();
+        if (uid) bg(supabase.from("videos").update({ category_id: categoryId }).eq("id", videoId).eq("user_id", uid), "assignCategory");
       },
 
+      logSession: (videoId, seconds) => {
+        const at = Date.now();
+        const sessId = newId();
+        set((s) => ({
+          sessions: [{ id: sessId, videoId, seconds, at }, ...s.sessions].slice(0, 500),
+          videos: s.videos.map((v) =>
+            v.id === videoId
+              ? { ...v, watchedSeconds: v.watchedSeconds + seconds, lastWatchedAt: at }
+              : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const total = get().videos.find((v) => v.id === videoId)?.watchedSeconds ?? 0;
+          bg(
+            supabase.from("sessions").insert({
+              id: sessId,
+              user_id: uid,
+              video_id: videoId,
+              seconds,
+              at: new Date(at).toISOString(),
+            }),
+            "logSession.insert",
+          );
+          bg(
+            supabase.from("videos")
+              .update({ watched_seconds: total, last_watched_at: new Date(at).toISOString() })
+              .eq("id", videoId).eq("user_id", uid),
+            "logSession.update",
+          );
+        }
+      },
+
+      bumpStreak: () => {
+        const now = Date.now();
+        const { lastStreakAt, streak } = get();
+        let nextStreak = streak;
+        let nextLast = lastStreakAt;
+        if (!lastStreakAt) {
+          nextStreak = 1; nextLast = now;
+        } else {
+          const diff = daysBetween(lastStreakAt, now);
+          if (diff === 0) return;
+          if (diff === 1) { nextStreak = streak + 1; nextLast = now; }
+          else { nextStreak = 1; nextLast = now; }
+        }
+        set({ streak: nextStreak, lastStreakAt: nextLast, streakWatchedIds: [] });
+        const uid = currentUserId();
+        if (uid) {
+          bg(
+            supabase.from("streaks").upsert({
+              user_id: uid,
+              streak: nextStreak,
+              last_streak_at: new Date(nextLast!).toISOString(),
+            }, { onConflict: "user_id" }),
+            "bumpStreak",
+          );
+        }
+      },
       getCurrentStreak: () => {
         const { lastStreakAt, streak } = get();
         if (!lastStreakAt) return 0;
@@ -173,8 +299,65 @@ export const useStore = create<AppState>()(
         if (diff > 1) return 0;
         return streak;
       },
+
+      hydrateFromCloud: async (userId: string) => {
+        const [catsRes, vidsRes, sessRes, streakRes] = await Promise.all([
+          supabase.from("categories").select("*").eq("user_id", userId).order("created_at", { ascending: true }),
+          supabase.from("videos").select("*").eq("user_id", userId).order("added_at", { ascending: false }),
+          supabase.from("sessions").select("*").eq("user_id", userId).order("at", { ascending: false }).limit(500),
+          supabase.from("streaks").select("*").eq("user_id", userId).maybeSingle(),
+        ]);
+
+        const categories: Category[] = (catsRes.data ?? []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description ?? undefined,
+          color: c.color,
+          icon: c.icon,
+          createdAt: new Date(c.created_at).getTime(),
+        }));
+        const videos: Video[] = (vidsRes.data ?? []).map((v) => ({
+          id: v.id,
+          youtubeId: v.youtube_id,
+          title: v.title,
+          channel: v.channel,
+          channelUrl: v.channel_url ?? undefined,
+          thumbnail: v.thumbnail,
+          categoryId: v.category_id,
+          completed: v.completed,
+          watchedSeconds: v.watched_seconds,
+          notes: v.notes ?? undefined,
+          lastWatchedAt: v.last_watched_at ? new Date(v.last_watched_at).getTime() : undefined,
+          addedAt: new Date(v.added_at).getTime(),
+        }));
+        const sessions: SessionLog[] = (sessRes.data ?? []).map((s) => ({
+          id: s.id,
+          videoId: s.video_id ?? "",
+          seconds: s.seconds,
+          at: new Date(s.at).getTime(),
+        }));
+        const streak = streakRes.data?.streak ?? 0;
+        const lastStreakAt = streakRes.data?.last_streak_at ? new Date(streakRes.data.last_streak_at).getTime() : null;
+
+        set({ categories, videos, sessions, streak, lastStreakAt, hydrated: true });
+      },
+
+      resetForSignOut: () =>
+        set({
+          categories: [],
+          videos: [],
+          sessions: [],
+          streak: 0,
+          lastStreakAt: null,
+          streakWatchedIds: [],
+          hydrated: false,
+        }),
     }),
-    { name: "lumen-store-v1" },
+    {
+      name: "tubelearn-store-v2",
+      // Only persist the theme locally; data lives in the cloud.
+      partialize: (s) => ({ theme: s.theme }),
+    },
   ),
 );
 
