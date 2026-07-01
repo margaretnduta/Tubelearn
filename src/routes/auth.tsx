@@ -43,17 +43,25 @@ function AuthPage() {
 
   if (currentUserId) return <Navigate to="/dashboard" />;
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = mode === "signup" ? signUp(name, email, password) : signIn(email, password);
+    const result = mode === "signup" ? await signUp(name, email, password) : await signIn(email, password);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
     navigate({ to: "/dashboard" });
+  };
+
+  const onGoogle = async () => {
+    setBusy(true); setError(null);
+    const signInWithGoogle = useAuth.getState().signInWithGoogle;
+    const r = await signInWithGoogle();
+    setBusy(false);
+    if (!r.ok) setError(r.error);
   };
 
   return (
@@ -142,6 +150,19 @@ function AuthPage() {
             </button>
           </form>
 
+          <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
+          </div>
+          <button
+            type="button"
+            onClick={onGoogle}
+            disabled={busy}
+            className="mt-4 w-full rounded-md border border-border bg-background py-2.5 text-sm font-medium hover:bg-muted disabled:opacity-60"
+          >
+            Continue with Google
+          </button>
+
+
           <button
             type="button"
             onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setError(null); }}
@@ -161,15 +182,13 @@ function AuthPage() {
 
           {mode === "signin" && showReset && (
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 setResetMsg(null);
                 if (resetPw !== resetPw2) { setResetMsg({ type: "err", text: "Passwords don't match." }); return; }
-                const r = resetPassword(resetEmail, resetPw);
+                const r = await resetPassword(resetEmail, resetPw);
                 if (!r.ok) { setResetMsg({ type: "err", text: r.error }); return; }
-                setResetMsg({ type: "ok", text: "Password reset. You can sign in now." });
-                setPassword(resetPw);
-                setEmail(resetEmail);
+                setResetMsg({ type: "ok", text: "Check your email for a password reset link." });
                 setResetPw(""); setResetPw2("");
               }}
               className="mt-4 space-y-3 rounded-lg border border-border bg-background/40 p-4"
