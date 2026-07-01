@@ -150,7 +150,7 @@ export const useStore = create<AppState>()(
           if (patch.description !== undefined) p.description = patch.description;
           if (patch.color !== undefined) p.color = patch.color;
           if (patch.icon !== undefined) p.icon = patch.icon;
-          bg(supabase.from("categories").update(p).eq("id", id).eq("user_id", uid), "updateCategory");
+          bg(supabase.from("categories").update(p as never).eq("id", id).eq("user_id", uid), "updateCategory");
         }
       },
       deleteCategory: (id) => {
