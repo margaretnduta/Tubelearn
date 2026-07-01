@@ -169,15 +169,13 @@ function AuthPage() {
 
           {mode === "signin" && showReset && (
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 setResetMsg(null);
                 if (resetPw !== resetPw2) { setResetMsg({ type: "err", text: "Passwords don't match." }); return; }
-                const r = resetPassword(resetEmail, resetPw);
+                const r = await resetPassword(resetEmail, resetPw);
                 if (!r.ok) { setResetMsg({ type: "err", text: r.error }); return; }
-                setResetMsg({ type: "ok", text: "Password reset. You can sign in now." });
-                setPassword(resetPw);
-                setEmail(resetEmail);
+                setResetMsg({ type: "ok", text: "Check your email for a password reset link." });
                 setResetPw(""); setResetPw2("");
               }}
               className="mt-4 space-y-3 rounded-lg border border-border bg-background/40 p-4"
