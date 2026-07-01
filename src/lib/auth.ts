@@ -124,7 +124,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
       next.email = em;
     }
     if (Object.keys(next).length) {
-      const { error } = await supabase.from("profiles").update(next).eq("id", id);
+      const { error } = await supabase.from("profiles").update(next as never).eq("id", id);
       if (error) {
         if (error.code === "23505") return { ok: false, error: "That username is already taken." };
         return { ok: false, error: error.message };
