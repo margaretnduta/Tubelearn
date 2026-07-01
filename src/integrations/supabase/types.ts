@@ -14,7 +14,172 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          local_id: string | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          description?: string | null
+          icon: string
+          id?: string
+          local_id?: string | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          local_id?: string | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          at: string
+          id: string
+          seconds: number
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          at?: string
+          id?: string
+          seconds: number
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          at?: string
+          id?: string
+          seconds?: number
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      streaks: {
+        Row: {
+          last_streak_at: string | null
+          streak: number
+          user_id: string
+        }
+        Insert: {
+          last_streak_at?: string | null
+          streak?: number
+          user_id: string
+        }
+        Update: {
+          last_streak_at?: string | null
+          streak?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          added_at: string
+          category_id: string | null
+          channel: string
+          channel_url: string | null
+          completed: boolean
+          id: string
+          last_watched_at: string | null
+          local_id: string | null
+          notes: string | null
+          thumbnail: string
+          title: string
+          user_id: string
+          watched_seconds: number
+          youtube_id: string
+        }
+        Insert: {
+          added_at?: string
+          category_id?: string | null
+          channel?: string
+          channel_url?: string | null
+          completed?: boolean
+          id?: string
+          last_watched_at?: string | null
+          local_id?: string | null
+          notes?: string | null
+          thumbnail?: string
+          title: string
+          user_id: string
+          watched_seconds?: number
+          youtube_id: string
+        }
+        Update: {
+          added_at?: string
+          category_id?: string | null
+          channel?: string
+          channel_url?: string | null
+          completed?: boolean
+          id?: string
+          last_watched_at?: string | null
+          local_id?: string | null
+          notes?: string | null
+          thumbnail?: string
+          title?: string
+          user_id?: string
+          watched_seconds?: number
+          youtube_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
