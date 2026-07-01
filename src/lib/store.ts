@@ -197,7 +197,7 @@ export const useStore = create<AppState>()(
           if (patch.watchedSeconds !== undefined) p.watched_seconds = patch.watchedSeconds;
           if (patch.notes !== undefined) p.notes = patch.notes;
           if (patch.lastWatchedAt !== undefined) p.last_watched_at = new Date(patch.lastWatchedAt).toISOString();
-          bg(supabase.from("videos").update(p).eq("id", id).eq("user_id", uid), "updateVideo");
+          bg(supabase.from("videos").update(p as never).eq("id", id).eq("user_id", uid), "updateVideo");
         }
       },
       deleteVideo: (id) => {
