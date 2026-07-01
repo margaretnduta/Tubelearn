@@ -160,8 +160,8 @@ function AuthPage() {
             className="mt-4 w-full rounded-md border border-border bg-background py-2.5 text-sm font-medium hover:bg-muted disabled:opacity-60"
           >
             Continue with Google
-            </button>
-          </form>
+          </button>
+
 
           <button
             type="button"
