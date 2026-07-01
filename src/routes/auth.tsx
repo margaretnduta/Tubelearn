@@ -43,17 +43,25 @@ function AuthPage() {
 
   if (currentUserId) return <Navigate to="/dashboard" />;
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = mode === "signup" ? signUp(name, email, password) : signIn(email, password);
+    const result = mode === "signup" ? await signUp(name, email, password) : await signIn(email, password);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
     navigate({ to: "/dashboard" });
+  };
+
+  const onGoogle = async () => {
+    setBusy(true); setError(null);
+    const signInWithGoogle = useAuth.getState().signInWithGoogle;
+    const r = await signInWithGoogle();
+    setBusy(false);
+    if (!r.ok) setError(r.error);
   };
 
   return (
