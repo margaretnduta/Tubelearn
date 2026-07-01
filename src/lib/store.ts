@@ -95,16 +95,9 @@ function bg(promise: PromiseLike<{ error: unknown }>, label: string) {
   }).catch((e) => console.warn(`[store:${label}]`, e));
 }
 
-function currentUserId(): string | null {
-  // Read from useAuth without importing at module scope (avoids cycle).
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("@/lib/auth") as { useAuth: { getState: () => { currentUserId: string | null } } };
-    return mod.useAuth.getState().currentUserId;
-  } catch {
-    return null;
-  }
-}
+let _userIdGetter: () => string | null = () => null;
+export function _setUserIdGetter(fn: () => string | null) { _userIdGetter = fn; }
+function currentUserId(): string | null { return _userIdGetter(); }
 
 export const useStore = create<AppState>()(
   persist(
