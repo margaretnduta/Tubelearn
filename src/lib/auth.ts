@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { runMigrationIfNeeded, clearLocalData } from "@/lib/migration";
-import { useStore } from "@/lib/store";
+import { useStore, _setUserIdGetter } from "@/lib/store";
 
 export interface AuthUser {
   id: string;
