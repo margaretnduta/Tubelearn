@@ -37,25 +37,25 @@ function ProfilePage() {
 
   if (!user) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/profile" }} />;
 
-  const onSave = (e: React.FormEvent) => {
+  const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = updateProfile({ name, username, email });
+    const result = await updateProfile({ name, username, email });
     if (!result.ok) setMsg({ kind: "err", text: result.error });
     else setMsg({ kind: "ok", text: "Profile saved." });
   };
 
-  const onLogout = () => {
-    signOut();
+  const onLogout = async () => {
+    await signOut();
     navigate({ to: "/" });
   };
 
-  const onChangePassword = (e: React.FormEvent) => {
+  const onChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPw !== confirmPw) {
       setPwMsg({ kind: "err", text: "New passwords don't match." });
       return;
     }
-    const result = changePassword(currentPw, newPw);
+    const result = await changePassword(currentPw, newPw);
     if (!result.ok) {
       setPwMsg({ kind: "err", text: result.error });
       return;
@@ -66,9 +66,9 @@ function ProfilePage() {
     setConfirmPw("");
   };
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!confirm("Delete your account? This removes your profile and cannot be undone.")) return;
-    deleteAccount();
+    await deleteAccount();
     navigate({ to: "/" });
   };
 
