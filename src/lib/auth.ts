@@ -183,6 +183,7 @@ let _initialized = false;
 export function initAuth() {
   if (_initialized || typeof window === "undefined") return;
   _initialized = true;
+  _setUserIdGetter(() => useAuth.getState().currentUserId);
 
   const handle = async (userId: string | null) => {
     if (!userId) {
