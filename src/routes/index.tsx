@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight, Mail, Github, Sparkles, Smartphone } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { InstallAppButton } from "@/components/InstallAppButton";
@@ -13,8 +14,31 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
+function useIsInstalled() {
+  const [installed, setInstalled] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () =>
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      // @ts-expect-error iOS Safari
+      window.navigator.standalone === true;
+    setInstalled(check());
+    const onInstalled = () => setInstalled(true);
+    window.addEventListener("appinstalled", onInstalled);
+    const mq = window.matchMedia?.("(display-mode: standalone)");
+    const onChange = () => setInstalled(check());
+    mq?.addEventListener?.("change", onChange);
+    return () => {
+      window.removeEventListener("appinstalled", onInstalled);
+      mq?.removeEventListener?.("change", onChange);
+    };
+  }, []);
+  return installed;
+}
+
 function Landing() {
   const userId = useAuth((s) => s.currentUserId);
+  const isInstalled = useIsInstalled();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -77,6 +101,7 @@ function Landing() {
         <Feature icon={CheckCircle2} title="New → In Progress → Done" body="Each video has a real state. Finish the shelf, finish the subject." />
       </section>
 
+      {!isInstalled && (
       <section className="border-t border-border bg-card/40">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -94,6 +119,7 @@ function Landing() {
           </div>
         </div>
       </section>
+      )}
 
       <footer className="border-t border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8">

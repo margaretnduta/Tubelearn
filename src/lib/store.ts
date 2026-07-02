@@ -11,6 +11,14 @@ export interface Category {
   createdAt: number;
 }
 
+export interface VideoSegment {
+  id: string;
+  name: string;
+  startSec: number;
+  endSec: number;
+  watchedSeconds: number;
+}
+
 export interface Video {
   id: string;
   youtubeId: string;
@@ -24,6 +32,9 @@ export interface Video {
   watchedSeconds: number;
   notes?: string;
   lastWatchedAt?: number;
+  durationSeconds?: number;
+  summary?: string;
+  segments: VideoSegment[];
 }
 
 export interface SessionLog {
@@ -52,11 +63,18 @@ interface AppState {
   updateCategory: (id: string, patch: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
 
-  addVideo: (v: Omit<Video, "id" | "addedAt" | "completed" | "watchedSeconds">) => Video;
+  addVideo: (v: Omit<Video, "id" | "addedAt" | "completed" | "watchedSeconds" | "segments">) => Video;
   updateVideo: (id: string, patch: Partial<Video>) => void;
   deleteVideo: (id: string) => void;
   toggleComplete: (id: string) => void;
   assignCategory: (videoId: string, categoryId: string | null) => void;
+
+  addSegment: (videoId: string, seg: Omit<VideoSegment, "id" | "watchedSeconds">) => void;
+  updateSegment: (videoId: string, segId: string, patch: Partial<VideoSegment>) => void;
+  deleteSegment: (videoId: string, segId: string) => void;
+  addSegmentWatchTime: (videoId: string, segId: string, seconds: number) => void;
+  setVideoSummary: (videoId: string, summary: string) => void;
+  setVideoDuration: (videoId: string, seconds: number) => void;
 
   logSession: (videoId: string, seconds: number) => void;
   bumpStreak: (videoId: string) => void;
@@ -156,7 +174,7 @@ export const useStore = create<AppState>()(
       },
 
       addVideo: (v) => {
-        const vid: Video = { ...v, id: newId(), addedAt: Date.now(), completed: false, watchedSeconds: 0 };
+        const vid: Video = { ...v, id: newId(), addedAt: Date.now(), completed: false, watchedSeconds: 0, segments: [] };
         set((s) => ({ videos: [vid, ...s.videos] }));
         const uid = currentUserId();
         if (uid) {
@@ -225,6 +243,77 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) bg(supabase.from("videos").update({ category_id: categoryId }).eq("id", videoId).eq("user_id", uid), "assignCategory");
       },
+
+      addSegment: (videoId, seg) => {
+        const newSeg: VideoSegment = { ...seg, id: newId(), watchedSeconds: 0 };
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId ? { ...v, segments: [...v.segments, newSeg] } : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "addSegment");
+        }
+      },
+      updateSegment: (videoId, segId, patch) => {
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId
+              ? { ...v, segments: v.segments.map((sg) => (sg.id === segId ? { ...sg, ...patch } : sg)) }
+              : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "updateSegment");
+        }
+      },
+      deleteSegment: (videoId, segId) => {
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId ? { ...v, segments: v.segments.filter((sg) => sg.id !== segId) } : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "deleteSegment");
+        }
+      },
+      addSegmentWatchTime: (videoId, segId, seconds) => {
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId
+              ? {
+                  ...v,
+                  segments: v.segments.map((sg) =>
+                    sg.id === segId ? { ...sg, watchedSeconds: sg.watchedSeconds + seconds } : sg,
+                  ),
+                }
+              : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "addSegmentWatchTime");
+        }
+      },
+      setVideoSummary: (videoId, summary) => {
+        set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, summary } : v)) }));
+        // server persistence handled by summarize serverFn
+      },
+      setVideoDuration: (videoId, seconds) => {
+        const prev = get().videos.find((v) => v.id === videoId);
+        if (prev?.durationSeconds === seconds) return;
+        set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, durationSeconds: seconds } : v)) }));
+        const uid = currentUserId();
+        if (uid) bg(supabase.from("videos").update({ duration_seconds: seconds }).eq("id", videoId).eq("user_id", uid), "setVideoDuration");
+      },
+
 
       logSession: (videoId, seconds) => {
         const at = Date.now();
@@ -322,6 +411,11 @@ export const useStore = create<AppState>()(
           notes: v.notes ?? undefined,
           lastWatchedAt: v.last_watched_at ? new Date(v.last_watched_at).getTime() : undefined,
           addedAt: new Date(v.added_at).getTime(),
+          durationSeconds: (v as { duration_seconds?: number | null }).duration_seconds ?? undefined,
+          summary: (v as { summary?: string | null }).summary ?? undefined,
+          segments: Array.isArray((v as { segments?: unknown }).segments)
+            ? ((v as unknown as { segments: VideoSegment[] }).segments)
+            : [],
         }));
         const sessions: SessionLog[] = (sessRes.data ?? []).map((s) => ({
           id: s.id,

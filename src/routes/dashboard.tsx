@@ -1,10 +1,10 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, TrendingUp, Clock, BookOpen, ChevronRight, Trash2, MoreVertical, Flame } from "lucide-react";
+import { Plus, TrendingUp, Clock, BookOpen, ChevronRight, Trash2, MoreVertical, Flame, Pencil } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { CategoryDialog } from "@/components/CategoryDialog";
 import { VideoCard } from "@/components/VideoCard";
-import { useStore, formatDuration, relativeTime } from "@/lib/store";
+import { useStore, formatDuration, relativeTime, type Category } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import {
   DropdownMenu,
@@ -33,6 +33,7 @@ function Dashboard() {
   const lastStreakAt = useStore((s) => s.lastStreakAt);
   const deleteCategory = useStore((s) => s.deleteCategory);
   const [openCat, setOpenCat] = useState(false);
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
 
   const daysSince = lastStreakAt
     ? Math.round(
@@ -47,7 +48,7 @@ function Dashboard() {
   const completed = videos.filter((v) => v.completed).length;
   const inProgress = videos.filter((v) => !v.completed && v.watchedSeconds > 0).length;
   const totalSeconds = videos.reduce((acc, v) => acc + v.watchedSeconds, 0);
-  const completionPct = totalVideos ? Math.round((completed / totalVideos) * 100) : 0;
+  // (percent no longer displayed on dashboard — count only)
 
   const last7Days = sessions.filter((s) => Date.now() - s.at < 7 * 24 * 3600 * 1000);
   const weekSeconds = last7Days.reduce((a, s) => a + s.seconds, 0);
@@ -88,34 +89,25 @@ function Dashboard() {
           <div className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
             <Stat label="Videos" value={String(totalVideos)} icon={BookOpen} />
             <Stat label="In progress" value={String(inProgress)} icon={Clock} />
-            <Stat label="Done" value={`${completed} · ${completionPct}%`} icon={TrendingUp} />
-            <Stat label="This week" value={formatDuration(weekSeconds)} icon={ChevronRight} />
-          </div>
-
-          <div className="mt-6 flex items-center gap-4 rounded-xl border border-border bg-card p-5">
-            <div
-              className={`grid h-14 w-14 place-items-center rounded-full ${liveStreak > 0 ? "bg-[oklch(0.7_0.18_145)]/15" : "bg-muted"}`}
-              aria-hidden
-            >
-              <Flame
-                className={`h-7 w-7 ${liveStreak > 0 ? "" : "opacity-40"}`}
-                style={liveStreak > 0 ? { color: "oklch(0.7 0.2 145)", fill: "oklch(0.7 0.2 145)" } : undefined}
-              />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Learning streak</p>
-              <div className="flex items-baseline gap-2">
-                <span className="font-display text-4xl tabular tracking-tight" style={liveStreak > 0 ? { color: "oklch(0.7 0.2 145)" } : undefined}>
+            <Stat label="Done" value={totalVideos ? `${completed} / ${totalVideos}` : String(completed)} icon={TrendingUp} />
+            <Stat
+              label="This week"
+              value={formatDuration(weekSeconds)}
+              icon={ChevronRight}
+              badge={
+                <span
+                  title={liveStreak > 0 ? `${liveStreak}-day streak` : "No active streak"}
+                  className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular ${liveStreak > 0 ? "bg-[oklch(0.7_0.2_145)]/15" : "bg-muted text-muted-foreground"}`}
+                  style={liveStreak > 0 ? { color: "oklch(0.7 0.2 145)" } : undefined}
+                >
+                  <Flame
+                    className="h-3 w-3"
+                    style={liveStreak > 0 ? { fill: "oklch(0.7 0.2 145)" } : undefined}
+                  />
                   {liveStreak}
                 </span>
-                <span className="text-sm text-muted-foreground">{liveStreak === 1 ? "video" : "videos"}</span>
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {liveStreak > 0
-                  ? "Watch another video within 24h to keep the flame alive."
-                  : "Start a video to spark your streak."}
-              </p>
-            </div>
+              }
+            />
           </div>
         </div>
       </section>
@@ -158,6 +150,9 @@ function Dashboard() {
                         <Link to="/category/$id" params={{ id: c.id }} className="cursor-pointer">
                           <ChevronRight className="mr-2 h-4 w-4" /> Open
                         </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setEditingCat(c)}>
+                        <Pencil className="mr-2 h-4 w-4" /> Edit category
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -242,16 +237,18 @@ function Dashboard() {
       )}
 
       <CategoryDialog open={openCat} onOpenChange={setOpenCat} />
+      <CategoryDialog open={!!editingCat} onOpenChange={(v) => !v && setEditingCat(null)} initial={editingCat} />
     </AppShell>
   );
 }
 
-function Stat({ label, value, icon: Icon }: { label: string; value: string; icon: React.ComponentType<{ className?: string }> }) {
+function Stat({ label, value, icon: Icon, badge }: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; badge?: React.ReactNode }) {
   return (
     <div className="bg-card p-5">
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />
-        {label}
+        <span>{label}</span>
+        {badge && <span className="ml-auto">{badge}</span>}
       </div>
       <div className="mt-2 font-display text-3xl tracking-tight tabular">{value}</div>
     </div>
