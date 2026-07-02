@@ -340,6 +340,11 @@ export const useStore = create<AppState>()(
           notes: v.notes ?? undefined,
           lastWatchedAt: v.last_watched_at ? new Date(v.last_watched_at).getTime() : undefined,
           addedAt: new Date(v.added_at).getTime(),
+          durationSeconds: (v as { duration_seconds?: number | null }).duration_seconds ?? undefined,
+          summary: (v as { summary?: string | null }).summary ?? undefined,
+          segments: Array.isArray((v as { segments?: unknown }).segments)
+            ? ((v as { segments: VideoSegment[] }).segments)
+            : [],
         }));
         const sessions: SessionLog[] = (sessRes.data ?? []).map((s) => ({
           id: s.id,
