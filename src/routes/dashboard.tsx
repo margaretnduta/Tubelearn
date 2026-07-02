@@ -48,7 +48,7 @@ function Dashboard() {
   const completed = videos.filter((v) => v.completed).length;
   const inProgress = videos.filter((v) => !v.completed && v.watchedSeconds > 0).length;
   const totalSeconds = videos.reduce((acc, v) => acc + v.watchedSeconds, 0);
-  const completionPct = totalVideos ? Math.round((completed / totalVideos) * 100) : 0;
+  // (percent no longer displayed on dashboard — count only)
 
   const last7Days = sessions.filter((s) => Date.now() - s.at < 7 * 24 * 3600 * 1000);
   const weekSeconds = last7Days.reduce((a, s) => a + s.seconds, 0);
