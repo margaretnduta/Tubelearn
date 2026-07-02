@@ -33,6 +33,7 @@ function Dashboard() {
   const lastStreakAt = useStore((s) => s.lastStreakAt);
   const deleteCategory = useStore((s) => s.deleteCategory);
   const [openCat, setOpenCat] = useState(false);
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
 
   const daysSince = lastStreakAt
     ? Math.round(
