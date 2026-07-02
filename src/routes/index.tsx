@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { GraduationCap, Layers, Clock, CheckCircle2, ArrowRight, Mail, Github, Sparkles, Smartphone } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { InstallAppButton } from "@/components/InstallAppButton";
@@ -13,8 +14,31 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
+function useIsInstalled() {
+  const [installed, setInstalled] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () =>
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      // @ts-expect-error iOS Safari
+      window.navigator.standalone === true;
+    setInstalled(check());
+    const onInstalled = () => setInstalled(true);
+    window.addEventListener("appinstalled", onInstalled);
+    const mq = window.matchMedia?.("(display-mode: standalone)");
+    const onChange = () => setInstalled(check());
+    mq?.addEventListener?.("change", onChange);
+    return () => {
+      window.removeEventListener("appinstalled", onInstalled);
+      mq?.removeEventListener?.("change", onChange);
+    };
+  }, []);
+  return installed;
+}
+
 function Landing() {
   const userId = useAuth((s) => s.currentUserId);
+  const isInstalled = useIsInstalled();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
