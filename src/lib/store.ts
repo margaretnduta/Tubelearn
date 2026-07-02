@@ -174,7 +174,7 @@ export const useStore = create<AppState>()(
       },
 
       addVideo: (v) => {
-        const vid: Video = { ...v, id: newId(), addedAt: Date.now(), completed: false, watchedSeconds: 0 };
+        const vid: Video = { ...v, id: newId(), addedAt: Date.now(), completed: false, watchedSeconds: 0, segments: [] };
         set((s) => ({ videos: [vid, ...s.videos] }));
         const uid = currentUserId();
         if (uid) {
