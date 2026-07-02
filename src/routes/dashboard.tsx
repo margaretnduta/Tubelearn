@@ -151,6 +151,9 @@ function Dashboard() {
                           <ChevronRight className="mr-2 h-4 w-4" /> Open
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setEditingCat(c)}>
+                        <Pencil className="mr-2 h-4 w-4" /> Edit category
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
