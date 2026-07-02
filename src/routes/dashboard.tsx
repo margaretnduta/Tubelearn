@@ -238,12 +238,13 @@ function Dashboard() {
   );
 }
 
-function Stat({ label, value, icon: Icon }: { label: string; value: string; icon: React.ComponentType<{ className?: string }> }) {
+function Stat({ label, value, icon: Icon, badge }: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; badge?: React.ReactNode }) {
   return (
     <div className="bg-card p-5">
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />
-        {label}
+        <span>{label}</span>
+        {badge && <span className="ml-auto">{badge}</span>}
       </div>
       <div className="mt-2 font-display text-3xl tracking-tight tabular">{value}</div>
     </div>
