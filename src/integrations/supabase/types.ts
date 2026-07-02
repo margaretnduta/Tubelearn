@@ -128,10 +128,13 @@ export type Database = {
           channel: string
           channel_url: string | null
           completed: boolean
+          duration_seconds: number | null
           id: string
           last_watched_at: string | null
           local_id: string | null
           notes: string | null
+          segments: Json
+          summary: string | null
           thumbnail: string
           title: string
           user_id: string
@@ -144,10 +147,13 @@ export type Database = {
           channel?: string
           channel_url?: string | null
           completed?: boolean
+          duration_seconds?: number | null
           id?: string
           last_watched_at?: string | null
           local_id?: string | null
           notes?: string | null
+          segments?: Json
+          summary?: string | null
           thumbnail?: string
           title: string
           user_id: string
@@ -160,10 +166,13 @@ export type Database = {
           channel?: string
           channel_url?: string | null
           completed?: boolean
+          duration_seconds?: number | null
           id?: string
           last_watched_at?: string | null
           local_id?: string | null
           notes?: string | null
+          segments?: Json
+          summary?: string | null
           thumbnail?: string
           title?: string
           user_id?: string
