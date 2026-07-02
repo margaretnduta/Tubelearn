@@ -63,11 +63,18 @@ interface AppState {
   updateCategory: (id: string, patch: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
 
-  addVideo: (v: Omit<Video, "id" | "addedAt" | "completed" | "watchedSeconds">) => Video;
+  addVideo: (v: Omit<Video, "id" | "addedAt" | "completed" | "watchedSeconds" | "segments">) => Video;
   updateVideo: (id: string, patch: Partial<Video>) => void;
   deleteVideo: (id: string) => void;
   toggleComplete: (id: string) => void;
   assignCategory: (videoId: string, categoryId: string | null) => void;
+
+  addSegment: (videoId: string, seg: Omit<VideoSegment, "id" | "watchedSeconds">) => void;
+  updateSegment: (videoId: string, segId: string, patch: Partial<VideoSegment>) => void;
+  deleteSegment: (videoId: string, segId: string) => void;
+  addSegmentWatchTime: (videoId: string, segId: string, seconds: number) => void;
+  setVideoSummary: (videoId: string, summary: string) => void;
+  setVideoDuration: (videoId: string, seconds: number) => void;
 
   logSession: (videoId: string, seconds: number) => void;
   bumpStreak: (videoId: string) => void;
