@@ -343,7 +343,7 @@ export const useStore = create<AppState>()(
           durationSeconds: (v as { duration_seconds?: number | null }).duration_seconds ?? undefined,
           summary: (v as { summary?: string | null }).summary ?? undefined,
           segments: Array.isArray((v as { segments?: unknown }).segments)
-            ? ((v as { segments: VideoSegment[] }).segments)
+            ? ((v as unknown as { segments: VideoSegment[] }).segments)
             : [],
         }));
         const sessions: SessionLog[] = (sessRes.data ?? []).map((s) => ({
