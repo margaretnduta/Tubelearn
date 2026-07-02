@@ -1,32 +1,49 @@
-import { useState } from "react";
-import { useStore, PALETTE } from "@/lib/store";
+import { useEffect, useState } from "react";
+import { useStore, PALETTE, type Category } from "@/lib/store";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  initial?: Category | null;
 }
 
 const ICONS = ["◐", "◇", "✦", "▲", "●", "✶", "❖", "✺", "✿", "☼"];
 
-export function CategoryDialog({ open, onOpenChange }: Props) {
+export function CategoryDialog({ open, onOpenChange, initial }: Props) {
   const addCategory = useStore((s) => s.addCategory);
+  const updateCategory = useStore((s) => s.updateCategory);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(PALETTE[0].swatch);
   const [icon, setIcon] = useState(ICONS[0]);
 
+  useEffect(() => {
+    if (open) {
+      setName(initial?.name ?? "");
+      setDescription(initial?.description ?? "");
+      setColor(initial?.color ?? PALETTE[0].swatch);
+      setIcon(initial?.icon ?? ICONS[0]);
+    }
+  }, [open, initial]);
+
   if (!open) return null;
+
+  const isEdit = !!initial;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    addCategory({
+    const payload = {
       name: name.trim().slice(0, 60),
       description: description.trim().slice(0, 200),
       color,
       icon,
-    });
-    setName(""); setDescription("");
+    };
+    if (isEdit && initial) {
+      updateCategory(initial.id, payload);
+    } else {
+      addCategory(payload);
+    }
     onOpenChange(false);
   };
 
@@ -38,7 +55,7 @@ export function CategoryDialog({ open, onOpenChange }: Props) {
         className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface shadow-lift"
       >
         <div className="border-b border-border px-5 py-4">
-          <h2 className="font-display text-2xl tracking-tight">New category</h2>
+          <h2 className="font-display text-2xl tracking-tight">{isEdit ? "Edit category" : "New category"}</h2>
           <p className="text-sm text-muted-foreground">A shelf for a single subject of study.</p>
         </div>
 
@@ -109,7 +126,7 @@ export function CategoryDialog({ open, onOpenChange }: Props) {
             Cancel
           </button>
           <button type="submit" disabled={!name.trim()} className="rounded-md bg-[var(--ember)] px-4 py-1.5 text-sm font-medium text-[oklch(0.2_0.02_60)] disabled:opacity-40">
-            Create
+            {isEdit ? "Save changes" : "Create"}
           </button>
         </div>
       </form>
