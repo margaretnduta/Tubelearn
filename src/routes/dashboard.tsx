@@ -237,6 +237,7 @@ function Dashboard() {
       )}
 
       <CategoryDialog open={openCat} onOpenChange={setOpenCat} />
+      <CategoryDialog open={!!editingCat} onOpenChange={(v) => !v && setEditingCat(null)} initial={editingCat} />
     </AppShell>
   );
 }
