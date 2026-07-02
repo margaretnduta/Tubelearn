@@ -119,6 +119,7 @@ function Landing() {
           </div>
         </div>
       </section>
+      )}
 
       <footer className="border-t border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8">
