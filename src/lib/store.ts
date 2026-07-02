@@ -244,6 +244,77 @@ export const useStore = create<AppState>()(
         if (uid) bg(supabase.from("videos").update({ category_id: categoryId }).eq("id", videoId).eq("user_id", uid), "assignCategory");
       },
 
+      addSegment: (videoId, seg) => {
+        const newSeg: VideoSegment = { ...seg, id: newId(), watchedSeconds: 0 };
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId ? { ...v, segments: [...v.segments, newSeg] } : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "addSegment");
+        }
+      },
+      updateSegment: (videoId, segId, patch) => {
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId
+              ? { ...v, segments: v.segments.map((sg) => (sg.id === segId ? { ...sg, ...patch } : sg)) }
+              : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "updateSegment");
+        }
+      },
+      deleteSegment: (videoId, segId) => {
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId ? { ...v, segments: v.segments.filter((sg) => sg.id !== segId) } : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "deleteSegment");
+        }
+      },
+      addSegmentWatchTime: (videoId, segId, seconds) => {
+        set((s) => ({
+          videos: s.videos.map((v) =>
+            v.id === videoId
+              ? {
+                  ...v,
+                  segments: v.segments.map((sg) =>
+                    sg.id === segId ? { ...sg, watchedSeconds: sg.watchedSeconds + seconds } : sg,
+                  ),
+                }
+              : v,
+          ),
+        }));
+        const uid = currentUserId();
+        if (uid) {
+          const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
+          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "addSegmentWatchTime");
+        }
+      },
+      setVideoSummary: (videoId, summary) => {
+        set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, summary } : v)) }));
+        // server persistence handled by summarize serverFn
+      },
+      setVideoDuration: (videoId, seconds) => {
+        const prev = get().videos.find((v) => v.id === videoId);
+        if (prev?.durationSeconds === seconds) return;
+        set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, durationSeconds: seconds } : v)) }));
+        const uid = currentUserId();
+        if (uid) bg(supabase.from("videos").update({ duration_seconds: seconds }).eq("id", videoId).eq("user_id", uid), "setVideoDuration");
+      },
+
+
       logSession: (videoId, seconds) => {
         const at = Date.now();
         const sessId = newId();
