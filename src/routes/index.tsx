@@ -101,6 +101,7 @@ function Landing() {
         <Feature icon={CheckCircle2} title="New → In Progress → Done" body="Each video has a real state. Finish the shelf, finish the subject." />
       </section>
 
+      {!isInstalled && (
       <section className="border-t border-border bg-card/40">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
