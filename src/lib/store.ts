@@ -11,6 +11,14 @@ export interface Category {
   createdAt: number;
 }
 
+export interface VideoSegment {
+  id: string;
+  name: string;
+  startSec: number;
+  endSec: number;
+  watchedSeconds: number;
+}
+
 export interface Video {
   id: string;
   youtubeId: string;
@@ -24,6 +32,9 @@ export interface Video {
   watchedSeconds: number;
   notes?: string;
   lastWatchedAt?: number;
+  durationSeconds?: number;
+  summary?: string;
+  segments: VideoSegment[];
 }
 
 export interface SessionLog {
