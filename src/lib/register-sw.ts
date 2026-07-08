@@ -1,7 +1,6 @@
-// Guarded service worker registration.
-// Registers `/sw.js` only in real production deployments so Chromium browsers
-// surface the `beforeinstallprompt` event. Refuses to register inside Lovable
-// preview/dev iframes, when the URL contains `?sw=off`, or in non-prod builds.
+// Guarded service worker registration using vite-plugin-pwa.
+// Registers only in real production deployments — never in Lovable preview,
+// dev, iframes, or when `?sw=off` is present.
 export function registerInstallSW() {
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
@@ -29,10 +28,11 @@ export function registerInstallSW() {
     return;
   }
 
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
-      /* ignore */
-    });
+  // Dynamic import so the virtual module only loads in prod.
+  void import("virtual:pwa-register").then(({ registerSW }) => {
+    registerSW({ immediate: true });
+  }).catch(() => {
+    /* ignore */
   });
 }
 
