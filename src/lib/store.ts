@@ -435,9 +435,17 @@ export const useStore = create<AppState>()(
         }),
     }),
     {
-      name: "tubelearn-store-v2",
-      // Only persist the theme locally; data lives in the cloud.
-      partialize: (s) => ({ theme: s.theme }),
+      name: "tubelearn-store-v3",
+      // Persist theme + all user-visible data so the library, notes, summaries,
+      // and progress remain fully browsable offline.
+      partialize: (s) => ({
+        theme: s.theme,
+        categories: s.categories,
+        videos: s.videos,
+        sessions: s.sessions.slice(0, 200),
+        streak: s.streak,
+        lastStreakAt: s.lastStreakAt,
+      }),
     },
   ),
 );
