@@ -107,12 +107,9 @@ export const PALETTE = [
   { name: "clay",   swatch: "oklch(0.6 0.12 40)"   },
 ];
 
-// Fire-and-forget helper — logs errors but never blocks UI.
-function bg(promise: PromiseLike<{ error: unknown }>, label: string) {
-  Promise.resolve(promise).then((r) => {
-    if (r && (r as { error?: unknown }).error) console.warn(`[store:${label}]`, (r as { error: unknown }).error);
-  }).catch((e) => console.warn(`[store:${label}]`, e));
-}
+// Route all writes through the offline queue. Successful writes run immediately;
+// failures / offline are persisted and replayed on reconnect.
+const sync = enqueue;
 
 let _userIdGetter: () => string | null = () => null;
 export function _setUserIdGetter(fn: () => string | null) { _userIdGetter = fn; }
