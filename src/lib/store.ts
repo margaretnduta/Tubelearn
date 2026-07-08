@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { supabase } from "@/integrations/supabase/client";
+import { enqueue } from "@/lib/offline-queue";
 
 export interface Category {
   id: string;
