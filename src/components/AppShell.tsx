@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { AddVideoDialog } from "./AddVideoDialog";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
+import { OfflineBanner } from "./OfflineBanner";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const theme = useStore((s) => s.theme);
@@ -160,6 +161,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
+      <OfflineBanner />
       <main>{children}</main>
 
       <footer className="mt-16 border-t border-border bg-card/40 sm:mt-24" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
