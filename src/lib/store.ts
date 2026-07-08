@@ -135,8 +135,10 @@ export const useStore = create<AppState>()(
         set((s) => ({ categories: [...s.categories, cat] }));
         const uid = currentUserId();
         if (uid) {
-          bg(
-            supabase.from("categories").insert({
+          sync({
+            kind: "insert",
+            table: "categories",
+            values: {
               id: cat.id,
               user_id: uid,
               name: cat.name,
@@ -144,9 +146,8 @@ export const useStore = create<AppState>()(
               color: cat.color,
               icon: cat.icon,
               created_at: new Date(cat.createdAt).toISOString(),
-            }),
-            "addCategory",
-          );
+            },
+          });
         }
         return cat;
       },
@@ -159,7 +160,7 @@ export const useStore = create<AppState>()(
           if (patch.description !== undefined) p.description = patch.description;
           if (patch.color !== undefined) p.color = patch.color;
           if (patch.icon !== undefined) p.icon = patch.icon;
-          bg(supabase.from("categories").update(p as never).eq("id", id).eq("user_id", uid), "updateCategory");
+          sync({ kind: "update", table: "categories", values: p, match: { id, user_id: uid } });
         }
       },
       deleteCategory: (id) => {
@@ -168,7 +169,7 @@ export const useStore = create<AppState>()(
           videos: s.videos.map((v) => (v.categoryId === id ? { ...v, categoryId: null } : v)),
         }));
         const uid = currentUserId();
-        if (uid) bg(supabase.from("categories").delete().eq("id", id).eq("user_id", uid), "deleteCategory");
+        if (uid) sync({ kind: "delete", table: "categories", match: { id, user_id: uid } });
       },
 
       addVideo: (v) => {
@@ -176,8 +177,10 @@ export const useStore = create<AppState>()(
         set((s) => ({ videos: [vid, ...s.videos] }));
         const uid = currentUserId();
         if (uid) {
-          bg(
-            supabase.from("videos").insert({
+          sync({
+            kind: "insert",
+            table: "videos",
+            values: {
               id: vid.id,
               user_id: uid,
               youtube_id: vid.youtubeId,
@@ -187,9 +190,8 @@ export const useStore = create<AppState>()(
               thumbnail: vid.thumbnail,
               category_id: vid.categoryId,
               added_at: new Date(vid.addedAt).toISOString(),
-            }),
-            "addVideo",
-          );
+            },
+          });
         }
         return vid;
       },
@@ -206,7 +208,7 @@ export const useStore = create<AppState>()(
           if (patch.watchedSeconds !== undefined) p.watched_seconds = patch.watchedSeconds;
           if (patch.notes !== undefined) p.notes = patch.notes;
           if (patch.lastWatchedAt !== undefined) p.last_watched_at = new Date(patch.lastWatchedAt).toISOString();
-          bg(supabase.from("videos").update(p as never).eq("id", id).eq("user_id", uid), "updateVideo");
+          sync({ kind: "update", table: "videos", values: p, match: { id, user_id: uid } });
         }
       },
       deleteVideo: (id) => {
@@ -215,7 +217,7 @@ export const useStore = create<AppState>()(
           sessions: s.sessions.filter((sess) => sess.videoId !== id),
         }));
         const uid = currentUserId();
-        if (uid) bg(supabase.from("videos").delete().eq("id", id).eq("user_id", uid), "deleteVideo");
+        if (uid) sync({ kind: "delete", table: "videos", match: { id, user_id: uid } });
       },
       toggleComplete: (id) => {
         const now = Date.now();
@@ -227,11 +229,12 @@ export const useStore = create<AppState>()(
         }));
         const uid = currentUserId();
         if (uid) {
-          bg(
-            supabase.from("videos").update({ completed: next, last_watched_at: new Date(now).toISOString() })
-              .eq("id", id).eq("user_id", uid),
-            "toggleComplete",
-          );
+          sync({
+            kind: "update",
+            table: "videos",
+            values: { completed: next, last_watched_at: new Date(now).toISOString() },
+            match: { id, user_id: uid },
+          });
         }
       },
       assignCategory: (videoId, categoryId) => {
@@ -239,7 +242,7 @@ export const useStore = create<AppState>()(
           videos: s.videos.map((v) => (v.id === videoId ? { ...v, categoryId } : v)),
         }));
         const uid = currentUserId();
-        if (uid) bg(supabase.from("videos").update({ category_id: categoryId }).eq("id", videoId).eq("user_id", uid), "assignCategory");
+        if (uid) sync({ kind: "update", table: "videos", values: { category_id: categoryId }, match: { id: videoId, user_id: uid } });
       },
 
       addSegment: (videoId, seg) => {
@@ -252,7 +255,7 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) {
           const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
-          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "addSegment");
+          sync({ kind: "update", table: "videos", values: { segments: segs }, match: { id: videoId, user_id: uid } });
         }
       },
       updateSegment: (videoId, segId, patch) => {
@@ -266,7 +269,7 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) {
           const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
-          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "updateSegment");
+          sync({ kind: "update", table: "videos", values: { segments: segs }, match: { id: videoId, user_id: uid } });
         }
       },
       deleteSegment: (videoId, segId) => {
@@ -278,7 +281,7 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) {
           const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
-          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "deleteSegment");
+          sync({ kind: "update", table: "videos", values: { segments: segs }, match: { id: videoId, user_id: uid } });
         }
       },
       addSegmentWatchTime: (videoId, segId, seconds) => {
@@ -297,7 +300,7 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) {
           const segs = get().videos.find((v) => v.id === videoId)?.segments ?? [];
-          bg(supabase.from("videos").update({ segments: segs as never }).eq("id", videoId).eq("user_id", uid), "addSegmentWatchTime");
+          sync({ kind: "update", table: "videos", values: { segments: segs }, match: { id: videoId, user_id: uid } });
         }
       },
       setVideoSummary: (videoId, summary) => {
@@ -309,7 +312,7 @@ export const useStore = create<AppState>()(
         if (prev?.durationSeconds === seconds) return;
         set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, durationSeconds: seconds } : v)) }));
         const uid = currentUserId();
-        if (uid) bg(supabase.from("videos").update({ duration_seconds: seconds }).eq("id", videoId).eq("user_id", uid), "setVideoDuration");
+        if (uid) sync({ kind: "update", table: "videos", values: { duration_seconds: seconds }, match: { id: videoId, user_id: uid } });
       },
 
 
@@ -327,22 +330,17 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) {
           const total = get().videos.find((v) => v.id === videoId)?.watchedSeconds ?? 0;
-          bg(
-            supabase.from("sessions").insert({
-              id: sessId,
-              user_id: uid,
-              video_id: videoId,
-              seconds,
-              at: new Date(at).toISOString(),
-            }),
-            "logSession.insert",
-          );
-          bg(
-            supabase.from("videos")
-              .update({ watched_seconds: total, last_watched_at: new Date(at).toISOString() })
-              .eq("id", videoId).eq("user_id", uid),
-            "logSession.update",
-          );
+          sync({
+            kind: "insert",
+            table: "sessions",
+            values: { id: sessId, user_id: uid, video_id: videoId, seconds, at: new Date(at).toISOString() },
+          });
+          sync({
+            kind: "update",
+            table: "videos",
+            values: { watched_seconds: total, last_watched_at: new Date(at).toISOString() },
+            match: { id: videoId, user_id: uid },
+          });
         }
       },
 
@@ -362,14 +360,12 @@ export const useStore = create<AppState>()(
         set({ streak: nextStreak, lastStreakAt: nextLast, streakWatchedIds: [] });
         const uid = currentUserId();
         if (uid) {
-          bg(
-            supabase.from("streaks").upsert({
-              user_id: uid,
-              streak: nextStreak,
-              last_streak_at: new Date(nextLast!).toISOString(),
-            }, { onConflict: "user_id" }),
-            "bumpStreak",
-          );
+          sync({
+            kind: "upsert",
+            table: "streaks",
+            values: { user_id: uid, streak: nextStreak, last_streak_at: new Date(nextLast!).toISOString() },
+            onConflict: "user_id",
+          });
         }
       },
       getCurrentStreak: () => {
