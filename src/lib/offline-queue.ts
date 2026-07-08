@@ -52,22 +52,23 @@ function newId() {
 }
 
 async function execute(op: MutationOp): Promise<{ error: unknown }> {
-  const t = supabase.from(op.table);
-  if (op.kind === "insert") {
-    return await t.insert(op.values as never);
-  }
-  if (op.kind === "upsert") {
-    return await t.upsert(op.values as never, op.onConflict ? { onConflict: op.onConflict } : undefined);
-  }
+  // Runtime table names — bypass generated table-name typing.
+  const t = (supabase.from as unknown as (n: string) => {
+    insert: (v: unknown) => Promise<{ error: unknown }>;
+    upsert: (v: unknown, o?: { onConflict?: string }) => Promise<{ error: unknown }>;
+    update: (v: unknown) => { eq: (k: string, v: unknown) => unknown };
+    delete: () => { eq: (k: string, v: unknown) => unknown };
+  })(op.table);
+  if (op.kind === "insert") return await t.insert(op.values);
+  if (op.kind === "upsert") return await t.upsert(op.values, op.onConflict ? { onConflict: op.onConflict } : undefined);
   if (op.kind === "update") {
-    let q = t.update(op.values as never);
-    for (const [k, v] of Object.entries(op.match)) q = q.eq(k, v as never);
-    return await q;
+    let q: unknown = t.update(op.values);
+    for (const [k, v] of Object.entries(op.match)) q = (q as { eq: (k: string, v: unknown) => unknown }).eq(k, v);
+    return await (q as Promise<{ error: unknown }>);
   }
-  // delete
-  let q = t.delete();
-  for (const [k, v] of Object.entries(op.match)) q = q.eq(k, v as never);
-  return await q;
+  let q: unknown = t.delete();
+  for (const [k, v] of Object.entries(op.match)) q = (q as { eq: (k: string, v: unknown) => unknown }).eq(k, v);
+  return await (q as Promise<{ error: unknown }>);
 }
 
 /** Fire an intended mutation. Runs immediately when online; queues on failure. */
