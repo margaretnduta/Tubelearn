@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeSync } from "@/components/ThemeSync";
 import { registerInstallSW } from "@/lib/register-sw";
+import { initOfflineQueue } from "@/lib/offline-queue";
 
 function NotFoundComponent() {
   return (
@@ -122,6 +123,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useEffect(() => {
     registerInstallSW();
+    initOfflineQueue();
     import("@/lib/auth").then((m) => m.initAuth());
   }, []);
   return (
