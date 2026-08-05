@@ -504,6 +504,7 @@ function SegmentsPanel({
   maxSegments,
   activeId,
   onPlay,
+  onAutoSplit,
   onAdd,
   onUpdate,
   onDelete,
@@ -515,6 +516,7 @@ function SegmentsPanel({
   maxSegments: number;
   activeId: string | null;
   onPlay: (s: VideoSegment) => void;
+  onAutoSplit: () => void;
   onAdd: (name: string, startSec: number, endSec: number) => void;
   onUpdate: (segId: string, patch: Partial<VideoSegment>) => void;
   onDelete: (segId: string) => void;
