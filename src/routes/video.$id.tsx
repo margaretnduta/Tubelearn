@@ -253,6 +253,42 @@ function VideoPage() {
     }
   };
 
+  const handleDeleteSummary = async () => {
+    if (!confirm("Delete this AI summary?")) return;
+    setSummaryError(null);
+    const prev = video.summary;
+    setVideoSummary(video.id, undefined);
+    try {
+      await clearVideoSummary({ data: { videoRowId: video.id } });
+    } catch (e) {
+      setVideoSummary(video.id, prev);
+      setSummaryError(e instanceof Error ? e.message : "Failed to delete summary");
+    }
+  };
+
+  const handleAutoSplit = () => {
+    if (!eligibleForSplit || maxSegments < 1) return;
+    if (video.segments.length > 0 && !confirm("Replace the existing segments with evenly aligned ones?")) return;
+    for (const s of video.segments) deleteSegment(video.id, s.id);
+    const n = maxSegments;
+    const size = effectiveDuration / n;
+    for (let i = 0; i < n; i++) {
+      const start = Math.round(i * size);
+      const end = i === n - 1 ? effectiveDuration : Math.round((i + 1) * size);
+      addSegment(video.id, { name: `Part ${i + 1}`, startSec: start, endSec: end });
+    }
+    setActiveSegmentId(null);
+  };
+
+  const handleRestart = () => {
+    setVideoPosition(video.id, 0);
+    setResumedFrom(null);
+    try {
+      playerRef.current?.seekTo(0, true);
+      playerRef.current?.playVideo();
+    } catch { /* ignore */ }
+  };
+
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
