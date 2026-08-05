@@ -419,6 +419,7 @@ export const useStore = create<AppState>()(
           addedAt: new Date(v.added_at).getTime(),
           durationSeconds: (v as { duration_seconds?: number | null }).duration_seconds ?? undefined,
           summary: (v as { summary?: string | null }).summary ?? undefined,
+          lastPositionSeconds: (v as { last_position_seconds?: number | null }).last_position_seconds ?? 0,
           segments: Array.isArray((v as { segments?: unknown }).segments)
             ? ((v as unknown as { segments: VideoSegment[] }).segments)
             : [],
