@@ -531,14 +531,24 @@ function SegmentsPanel({
           <Scissors className="h-4 w-4 text-muted-foreground" />
           <h2 className="font-display text-xl tracking-tight">Split into segments</h2>
         </div>
-        {eligible && segments.length < maxSegments && !adding && (
-          <button
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="h-3 w-3" /> Add segment
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {eligible && !adding && (
+            <button
+              onClick={onAutoSplit}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Wand2 className="h-3 w-3" /> Auto-split
+            </button>
+          )}
+          {eligible && segments.length < maxSegments && !adding && (
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="h-3 w-3" /> Add segment
+            </button>
+          )}
+        </div>
       </div>
 
       {!eligible ? (
@@ -547,7 +557,7 @@ function SegmentsPanel({
         </p>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
-          Each segment is at least 30 minutes. Up to {maxSegments} for this video. Only visible here on the watch page.
+          Each segment is at least 30 minutes. Up to {maxSegments} for this video. Auto-split divides the full {formatDuration(duration)} into evenly aligned parts with no gaps. Only visible here on the watch page.
         </p>
       )}
 
