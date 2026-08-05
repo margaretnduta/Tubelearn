@@ -96,6 +96,7 @@ function VideoPage() {
   const bumpStreak = useStore((s) => s.bumpStreak);
   const setVideoDuration = useStore((s) => s.setVideoDuration);
   const setVideoSummary = useStore((s) => s.setVideoSummary);
+  const setVideoPosition = useStore((s) => s.setVideoPosition);
   const addSegment = useStore((s) => s.addSegment);
   const updateSegment = useStore((s) => s.updateSegment);
   const deleteSegment = useStore((s) => s.deleteSegment);
@@ -107,6 +108,7 @@ function VideoPage() {
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [resumedFrom, setResumedFrom] = useState<number | null>(null);
 
   const playerHostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -114,7 +116,9 @@ function VideoPage() {
   const lastTickRef = useRef<number | null>(null);
   const flushBufferRef = useRef(0);
   const activeSegIdRef = useRef<string | null>(null);
+  const resumeAtRef = useRef<number>(video?.lastPositionSeconds ?? 0);
   useEffect(() => { activeSegIdRef.current = activeSegmentId; }, [activeSegmentId]);
+  useEffect(() => { resumeAtRef.current = video?.lastPositionSeconds ?? 0; /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [video?.id]);
 
   // Mount the YT player once per video
   useEffect(() => {
