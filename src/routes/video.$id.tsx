@@ -725,11 +725,13 @@ function SummaryPanel({
   loading,
   error,
   onRun,
+  onDelete,
 }: {
   summary?: string;
   loading: boolean;
   error: string | null;
   onRun: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div className="mt-6 rounded-xl border border-border bg-card p-5">
@@ -738,14 +740,24 @@ function SummaryPanel({
           <Sparkles className="h-4 w-4 text-[var(--ember)]" />
           <h2 className="font-display text-xl tracking-tight">AI summary</h2>
         </div>
-        <button
-          onClick={onRun}
-          disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-md bg-[var(--ember)] px-3 py-1.5 text-xs font-medium text-[oklch(0.2_0.02_60)] disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-          {summary ? "Regenerate" : "Summarize"}
-        </button>
+        <div className="flex items-center gap-1.5">
+          {summary && (
+            <button
+              onClick={onDelete}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:border-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </button>
+          )}
+          <button
+            onClick={onRun}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-md bg-[var(--ember)] px-3 py-1.5 text-xs font-medium text-[oklch(0.2_0.02_60)] disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {summary ? "Regenerate" : "Summarize"}
+          </button>
+        </div>
       </div>
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
       {!summary && !loading && (
@@ -758,6 +770,107 @@ function SummaryPanel({
           {summary}
         </div>
       )}
+    </div>
+  );
+}
+
+// -------------- Ask the AI about this video --------------
+
+type ChatMsg = { role: "user" | "assistant"; content: string };
+
+function ChatPanel({ videoRowId, youtubeId }: { videoRowId: string; youtubeId: string }) {
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [messages, busy]);
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = input.trim();
+    if (!q || busy) return;
+    setErr(null);
+    setInput("");
+    const history = messages.slice(-10);
+    setMessages((m) => [...m, { role: "user", content: q }]);
+    setBusy(true);
+    try {
+      const res = await askAboutVideo({ data: { videoRowId, youtubeId, question: q, history } });
+      setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "Couldn't get an answer");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-[var(--ember)]" />
+          <h2 className="font-display text-xl tracking-tight">Ask about this video</h2>
+        </div>
+        {messages.length > 0 && (
+          <button
+            onClick={() => { setMessages([]); setErr(null); }}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="h-3 w-3" /> Clear
+          </button>
+        )}
+      </div>
+
+      {messages.length === 0 && !busy && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Ask questions tailored to this video — the assistant reads its transcript and summary.
+        </p>
+      )}
+
+      {messages.length > 0 && (
+        <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-1">
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                m.role === "user"
+                  ? "ml-auto max-w-[85%] bg-foreground text-background"
+                  : "mr-auto max-w-[92%] border border-border bg-background text-foreground/90"
+              }`}
+            >
+              {m.content}
+            </div>
+          ))}
+          {busy && (
+            <div className="mr-auto inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+      )}
+
+      {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+
+      <form onSubmit={send} className="mt-4 flex items-center gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="e.g. Explain the main argument in simple terms"
+          maxLength={2000}
+          className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+        />
+        <button
+          type="submit"
+          disabled={busy || !input.trim()}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)] disabled:opacity-50"
+          aria-label="Send question"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </form>
     </div>
   );
 }
