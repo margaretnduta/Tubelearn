@@ -130,6 +130,7 @@ export type Database = {
           completed: boolean
           duration_seconds: number | null
           id: string
+          last_position_seconds: number
           last_watched_at: string | null
           local_id: string | null
           notes: string | null
@@ -149,6 +150,7 @@ export type Database = {
           completed?: boolean
           duration_seconds?: number | null
           id?: string
+          last_position_seconds?: number
           last_watched_at?: string | null
           local_id?: string | null
           notes?: string | null
@@ -168,6 +170,7 @@ export type Database = {
           completed?: boolean
           duration_seconds?: number | null
           id?: string
+          last_position_seconds?: number
           last_watched_at?: string | null
           local_id?: string | null
           notes?: string | null

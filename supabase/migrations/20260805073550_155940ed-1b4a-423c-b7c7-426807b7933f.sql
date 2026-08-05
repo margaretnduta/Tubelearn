@@ -1,0 +1,1 @@
+ALTER TABLE public.videos ADD COLUMN IF NOT EXISTS last_position_seconds integer NOT NULL DEFAULT 0;
