@@ -36,6 +36,7 @@ export interface Video {
   durationSeconds?: number;
   summary?: string;
   segments: VideoSegment[];
+  lastPositionSeconds?: number;
 }
 
 export interface SessionLog {
@@ -74,8 +75,9 @@ interface AppState {
   updateSegment: (videoId: string, segId: string, patch: Partial<VideoSegment>) => void;
   deleteSegment: (videoId: string, segId: string) => void;
   addSegmentWatchTime: (videoId: string, segId: string, seconds: number) => void;
-  setVideoSummary: (videoId: string, summary: string) => void;
+  setVideoSummary: (videoId: string, summary: string | undefined) => void;
   setVideoDuration: (videoId: string, seconds: number) => void;
+  setVideoPosition: (videoId: string, seconds: number) => void;
 
   logSession: (videoId: string, seconds: number) => void;
   bumpStreak: (videoId: string) => void;
@@ -305,7 +307,7 @@ export const useStore = create<AppState>()(
       },
       setVideoSummary: (videoId, summary) => {
         set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, summary } : v)) }));
-        // server persistence handled by summarize serverFn
+        // server persistence handled by summarize/clear serverFns
       },
       setVideoDuration: (videoId, seconds) => {
         const prev = get().videos.find((v) => v.id === videoId);
@@ -314,6 +316,16 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) sync({ kind: "update", table: "videos", values: { duration_seconds: seconds }, match: { id: videoId, user_id: uid } });
       },
+      setVideoPosition: (videoId, seconds) => {
+        const pos = Math.max(0, Math.round(seconds));
+        const prev = get().videos.find((v) => v.id === videoId);
+        if (!prev || prev.lastPositionSeconds === pos) return;
+        set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, lastPositionSeconds: pos } : v)) }));
+        const uid = currentUserId();
+        if (uid) sync({ kind: "update", table: "videos", values: { last_position_seconds: pos }, match: { id: videoId, user_id: uid } });
+      },
+
+
 
 
       logSession: (videoId, seconds) => {
@@ -407,6 +419,7 @@ export const useStore = create<AppState>()(
           addedAt: new Date(v.added_at).getTime(),
           durationSeconds: (v as { duration_seconds?: number | null }).duration_seconds ?? undefined,
           summary: (v as { summary?: string | null }).summary ?? undefined,
+          lastPositionSeconds: (v as { last_position_seconds?: number | null }).last_position_seconds ?? 0,
           segments: Array.isArray((v as { segments?: unknown }).segments)
             ? ((v as unknown as { segments: VideoSegment[] }).segments)
             : [],

@@ -1,10 +1,10 @@
 import { createFileRoute, Link, Navigate, notFound } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Trash2, ExternalLink, Scissors, Plus, Play, Sparkles, Loader2, Pencil, X } from "lucide-react";
+import { ArrowLeft, Check, Trash2, ExternalLink, Scissors, Plus, Play, Sparkles, Loader2, Pencil, X, Send, RotateCcw, Wand2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useStore, formatDuration, relativeTime, type VideoSegment } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
-import { summarizeVideo } from "@/lib/summarize.functions";
+import { summarizeVideo, clearVideoSummary, askAboutVideo } from "@/lib/summarize.functions";
 
 export const Route = createFileRoute("/video/$id")({
   component: VideoPage,
@@ -96,6 +96,7 @@ function VideoPage() {
   const bumpStreak = useStore((s) => s.bumpStreak);
   const setVideoDuration = useStore((s) => s.setVideoDuration);
   const setVideoSummary = useStore((s) => s.setVideoSummary);
+  const setVideoPosition = useStore((s) => s.setVideoPosition);
   const addSegment = useStore((s) => s.addSegment);
   const updateSegment = useStore((s) => s.updateSegment);
   const deleteSegment = useStore((s) => s.deleteSegment);
@@ -107,6 +108,7 @@ function VideoPage() {
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [resumedFrom, setResumedFrom] = useState<number | null>(null);
 
   const playerHostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -114,7 +116,9 @@ function VideoPage() {
   const lastTickRef = useRef<number | null>(null);
   const flushBufferRef = useRef(0);
   const activeSegIdRef = useRef<string | null>(null);
+  const resumeAtRef = useRef<number>(video?.lastPositionSeconds ?? 0);
   useEffect(() => { activeSegIdRef.current = activeSegmentId; }, [activeSegmentId]);
+  useEffect(() => { resumeAtRef.current = video?.lastPositionSeconds ?? 0; /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [video?.id]);
 
   // Mount the YT player once per video
   useEffect(() => {
@@ -135,20 +139,35 @@ function VideoPage() {
       }
     };
 
+    const savePosition = () => {
+      const p = playerRef.current;
+      if (!p) return;
+      try {
+        const t = p.getCurrentTime();
+        if (Number.isFinite(t) && t > 0) setVideoPosition(video.id, t);
+      } catch { /* ignore */ }
+    };
+
     loadYT().then((YT) => {
       if (cancelled || !playerHostRef.current) return;
       const host = document.createElement("div");
       playerHostRef.current.innerHTML = "";
       playerHostRef.current.appendChild(host);
+      const resumeAt = Math.max(0, Math.round(resumeAtRef.current || 0));
       playerRef.current = new YT.Player(host, {
         videoId: video.youtubeId,
-        playerVars: { rel: 0, modestbranding: 1 },
+        playerVars: { rel: 0, modestbranding: 1, ...(resumeAt > 5 ? { start: resumeAt } : {}) },
         events: {
           onReady: (e) => {
             const d = Math.round(e.target.getDuration() || 0);
             if (d > 0) {
               setDuration(d);
               setVideoDuration(video.id, d);
+            }
+            // Resume where the learner stopped (skip if effectively finished)
+            if (resumeAt > 5 && (!d || resumeAt < d - 10)) {
+              try { e.target.seekTo(resumeAt, true); } catch { /* ignore */ }
+              setResumedFrom(resumeAt);
             }
           },
           onStateChange: (e) => {
@@ -158,6 +177,7 @@ function VideoPage() {
               lastTickRef.current = Date.now();
             } else {
               lastTickRef.current = null;
+              savePosition();
             }
           },
         },
@@ -172,16 +192,17 @@ function VideoPage() {
           setActiveSeconds((prev) => prev + delta);
         }
       }, 1000);
-      flushHandle = setInterval(flushLog, 20_000);
+      flushHandle = setInterval(() => { flushLog(); savePosition(); }, 20_000);
     });
 
-    const onHide = () => flushLog();
+    const onHide = () => { flushLog(); savePosition(); };
     window.addEventListener("beforeunload", onHide);
     document.addEventListener("visibilitychange", onHide);
 
     return () => {
       cancelled = true;
       flushLog();
+      savePosition();
       if (tickHandle) clearInterval(tickHandle);
       if (flushHandle) clearInterval(flushHandle);
       window.removeEventListener("beforeunload", onHide);
@@ -232,6 +253,42 @@ function VideoPage() {
     }
   };
 
+  const handleDeleteSummary = async () => {
+    if (!confirm("Delete this AI summary?")) return;
+    setSummaryError(null);
+    const prev = video.summary;
+    setVideoSummary(video.id, undefined);
+    try {
+      await clearVideoSummary({ data: { videoRowId: video.id } });
+    } catch (e) {
+      setVideoSummary(video.id, prev);
+      setSummaryError(e instanceof Error ? e.message : "Failed to delete summary");
+    }
+  };
+
+  const handleAutoSplit = () => {
+    if (!eligibleForSplit || maxSegments < 1) return;
+    if (video.segments.length > 0 && !confirm("Replace the existing segments with evenly aligned ones?")) return;
+    for (const s of video.segments) deleteSegment(video.id, s.id);
+    const n = maxSegments;
+    const size = effectiveDuration / n;
+    for (let i = 0; i < n; i++) {
+      const start = Math.round(i * size);
+      const end = i === n - 1 ? effectiveDuration : Math.round((i + 1) * size);
+      addSegment(video.id, { name: `Part ${i + 1}`, startSec: start, endSec: end });
+    }
+    setActiveSegmentId(null);
+  };
+
+  const handleRestart = () => {
+    setVideoPosition(video.id, 0);
+    setResumedFrom(null);
+    try {
+      playerRef.current?.seekTo(0, true);
+      playerRef.current?.playVideo();
+    } catch { /* ignore */ }
+  };
+
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
@@ -246,6 +303,15 @@ function VideoPage() {
                 <div ref={playerHostRef} className="h-full w-full" />
               </div>
             </div>
+
+            {resumedFrom !== null && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+                <span className="tabular">Resumed where you left off — {fmtHms(resumedFrom)}</span>
+                <button onClick={handleRestart} className="inline-flex items-center gap-1 hover:text-foreground">
+                  <RotateCcw className="h-3 w-3" /> Start from beginning
+                </button>
+              </div>
+            )}
 
             <div className="mt-6">
               {category && (
@@ -284,6 +350,7 @@ function VideoPage() {
               maxSegments={maxSegments}
               activeId={activeSegmentId}
               onPlay={playSegment}
+              onAutoSplit={handleAutoSplit}
               onAdd={(name, startSec, endSec) => addSegment(video.id, { name, startSec, endSec })}
               onUpdate={(segId, patch) => updateSegment(video.id, segId, patch)}
               onDelete={(segId) => {
@@ -297,7 +364,11 @@ function VideoPage() {
               loading={summaryLoading}
               error={summaryError}
               onRun={handleSummarize}
+              onDelete={handleDeleteSummary}
             />
+
+            <ChatPanel videoRowId={video.id} youtubeId={video.youtubeId} />
+
 
             <div className="mt-6">
               <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -433,6 +504,7 @@ function SegmentsPanel({
   maxSegments,
   activeId,
   onPlay,
+  onAutoSplit,
   onAdd,
   onUpdate,
   onDelete,
@@ -444,6 +516,7 @@ function SegmentsPanel({
   maxSegments: number;
   activeId: string | null;
   onPlay: (s: VideoSegment) => void;
+  onAutoSplit: () => void;
   onAdd: (name: string, startSec: number, endSec: number) => void;
   onUpdate: (segId: string, patch: Partial<VideoSegment>) => void;
   onDelete: (segId: string) => void;
@@ -458,14 +531,24 @@ function SegmentsPanel({
           <Scissors className="h-4 w-4 text-muted-foreground" />
           <h2 className="font-display text-xl tracking-tight">Split into segments</h2>
         </div>
-        {eligible && segments.length < maxSegments && !adding && (
-          <button
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="h-3 w-3" /> Add segment
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {eligible && !adding && (
+            <button
+              onClick={onAutoSplit}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Wand2 className="h-3 w-3" /> Auto-split
+            </button>
+          )}
+          {eligible && segments.length < maxSegments && !adding && (
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="h-3 w-3" /> Add segment
+            </button>
+          )}
+        </div>
       </div>
 
       {!eligible ? (
@@ -474,7 +557,7 @@ function SegmentsPanel({
         </p>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
-          Each segment is at least 30 minutes. Up to {maxSegments} for this video. Only visible here on the watch page.
+          Each segment is at least 30 minutes. Up to {maxSegments} for this video. Auto-split divides the full {formatDuration(duration)} into evenly aligned parts with no gaps. Only visible here on the watch page.
         </p>
       )}
 
@@ -642,11 +725,13 @@ function SummaryPanel({
   loading,
   error,
   onRun,
+  onDelete,
 }: {
   summary?: string;
   loading: boolean;
   error: string | null;
   onRun: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div className="mt-6 rounded-xl border border-border bg-card p-5">
@@ -655,14 +740,24 @@ function SummaryPanel({
           <Sparkles className="h-4 w-4 text-[var(--ember)]" />
           <h2 className="font-display text-xl tracking-tight">AI summary</h2>
         </div>
-        <button
-          onClick={onRun}
-          disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-md bg-[var(--ember)] px-3 py-1.5 text-xs font-medium text-[oklch(0.2_0.02_60)] disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-          {summary ? "Regenerate" : "Summarize"}
-        </button>
+        <div className="flex items-center gap-1.5">
+          {summary && (
+            <button
+              onClick={onDelete}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:border-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </button>
+          )}
+          <button
+            onClick={onRun}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-md bg-[var(--ember)] px-3 py-1.5 text-xs font-medium text-[oklch(0.2_0.02_60)] disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {summary ? "Regenerate" : "Summarize"}
+          </button>
+        </div>
       </div>
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
       {!summary && !loading && (
@@ -675,6 +770,107 @@ function SummaryPanel({
           {summary}
         </div>
       )}
+    </div>
+  );
+}
+
+// -------------- Ask the AI about this video --------------
+
+type ChatMsg = { role: "user" | "assistant"; content: string };
+
+function ChatPanel({ videoRowId, youtubeId }: { videoRowId: string; youtubeId: string }) {
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [messages, busy]);
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = input.trim();
+    if (!q || busy) return;
+    setErr(null);
+    setInput("");
+    const history = messages.slice(-10);
+    setMessages((m) => [...m, { role: "user", content: q }]);
+    setBusy(true);
+    try {
+      const res = await askAboutVideo({ data: { videoRowId, youtubeId, question: q, history } });
+      setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "Couldn't get an answer");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-[var(--ember)]" />
+          <h2 className="font-display text-xl tracking-tight">Ask about this video</h2>
+        </div>
+        {messages.length > 0 && (
+          <button
+            onClick={() => { setMessages([]); setErr(null); }}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="h-3 w-3" /> Clear
+          </button>
+        )}
+      </div>
+
+      {messages.length === 0 && !busy && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Ask questions tailored to this video — the assistant reads its transcript and summary.
+        </p>
+      )}
+
+      {messages.length > 0 && (
+        <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-1">
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                m.role === "user"
+                  ? "ml-auto max-w-[85%] bg-foreground text-background"
+                  : "mr-auto max-w-[92%] border border-border bg-background text-foreground/90"
+              }`}
+            >
+              {m.content}
+            </div>
+          ))}
+          {busy && (
+            <div className="mr-auto inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+      )}
+
+      {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+
+      <form onSubmit={send} className="mt-4 flex items-center gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="e.g. Explain the main argument in simple terms"
+          maxLength={2000}
+          className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+        />
+        <button
+          type="submit"
+          disabled={busy || !input.trim()}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)] disabled:opacity-50"
+          aria-label="Send question"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </form>
     </div>
   );
 }

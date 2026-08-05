@@ -89,3 +89,65 @@ export const summarizeVideo = createServerFn({ method: "POST" })
     await supabase.from("videos").update({ summary: text }).eq("id", data.videoRowId).eq("user_id", userId);
     return { summary: text, hadTranscript: !!trimmed };
   });
+
+const ClearInput = z.object({ videoRowId: z.string().uuid() });
+
+export const clearVideoSummary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => ClearInput.parse(raw))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("videos").update({ summary: null }).eq("id", data.videoRowId).eq("user_id", userId);
+    if (error) throw new Error("Could not delete the summary");
+    return { ok: true };
+  });
+
+const AskInput = z.object({
+  videoRowId: z.string().uuid(),
+  youtubeId: z.string().min(3),
+  question: z.string().min(1).max(2000),
+  history: z
+    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
+    .max(20)
+    .default([]),
+});
+
+export const askAboutVideo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => AskInput.parse(raw))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("AI is not configured");
+
+    const { data: row, error: rowErr } = await supabase
+      .from("videos").select("id, title, channel, summary, notes")
+      .eq("id", data.videoRowId).eq("user_id", userId).maybeSingle();
+    if (rowErr || !row) throw new Error("Video not found");
+
+    const { text: transcript } = await fetchTranscript(data.youtubeId);
+    const trimmed = transcript.slice(0, 40_000);
+
+    const gateway = createLovableAiGatewayProvider(key);
+    const sys = [
+      "You are a study assistant answering questions about ONE specific YouTube video.",
+      "Ground every answer in the provided transcript and summary.",
+      "If the material doesn't cover the question, say so briefly and then give your best general explanation, clearly labelled.",
+      "Always answer in English. Be concise and use short paragraphs or bullets.",
+      "",
+      `Video title: ${row.title}`,
+      `Channel: ${row.channel}`,
+      row.summary ? `\nExisting summary:\n${row.summary}` : "",
+      trimmed ? `\nTranscript:\n${trimmed}` : "\n(No transcript/captions were available for this video.)",
+    ].join("\n");
+
+    const { text } = await generateText({
+      model: gateway("google/gemini-3-flash-preview"),
+      system: sys,
+      messages: [...data.history, { role: "user" as const, content: data.question }],
+    });
+
+    return { answer: text };
+  });
+
