@@ -139,20 +139,35 @@ function VideoPage() {
       }
     };
 
+    const savePosition = () => {
+      const p = playerRef.current;
+      if (!p) return;
+      try {
+        const t = p.getCurrentTime();
+        if (Number.isFinite(t) && t > 0) setVideoPosition(video.id, t);
+      } catch { /* ignore */ }
+    };
+
     loadYT().then((YT) => {
       if (cancelled || !playerHostRef.current) return;
       const host = document.createElement("div");
       playerHostRef.current.innerHTML = "";
       playerHostRef.current.appendChild(host);
+      const resumeAt = Math.max(0, Math.round(resumeAtRef.current || 0));
       playerRef.current = new YT.Player(host, {
         videoId: video.youtubeId,
-        playerVars: { rel: 0, modestbranding: 1 },
+        playerVars: { rel: 0, modestbranding: 1, ...(resumeAt > 5 ? { start: resumeAt } : {}) },
         events: {
           onReady: (e) => {
             const d = Math.round(e.target.getDuration() || 0);
             if (d > 0) {
               setDuration(d);
               setVideoDuration(video.id, d);
+            }
+            // Resume where the learner stopped (skip if effectively finished)
+            if (resumeAt > 5 && (!d || resumeAt < d - 10)) {
+              try { e.target.seekTo(resumeAt, true); } catch { /* ignore */ }
+              setResumedFrom(resumeAt);
             }
           },
           onStateChange: (e) => {
@@ -162,6 +177,7 @@ function VideoPage() {
               lastTickRef.current = Date.now();
             } else {
               lastTickRef.current = null;
+              savePosition();
             }
           },
         },
@@ -176,16 +192,17 @@ function VideoPage() {
           setActiveSeconds((prev) => prev + delta);
         }
       }, 1000);
-      flushHandle = setInterval(flushLog, 20_000);
+      flushHandle = setInterval(() => { flushLog(); savePosition(); }, 20_000);
     });
 
-    const onHide = () => flushLog();
+    const onHide = () => { flushLog(); savePosition(); };
     window.addEventListener("beforeunload", onHide);
     document.addEventListener("visibilitychange", onHide);
 
     return () => {
       cancelled = true;
       flushLog();
+      savePosition();
       if (tickHandle) clearInterval(tickHandle);
       if (flushHandle) clearInterval(flushHandle);
       window.removeEventListener("beforeunload", onHide);
