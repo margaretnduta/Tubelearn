@@ -75,8 +75,9 @@ interface AppState {
   updateSegment: (videoId: string, segId: string, patch: Partial<VideoSegment>) => void;
   deleteSegment: (videoId: string, segId: string) => void;
   addSegmentWatchTime: (videoId: string, segId: string, seconds: number) => void;
-  setVideoSummary: (videoId: string, summary: string) => void;
+  setVideoSummary: (videoId: string, summary: string | undefined) => void;
   setVideoDuration: (videoId: string, seconds: number) => void;
+  setVideoPosition: (videoId: string, seconds: number) => void;
 
   logSession: (videoId: string, seconds: number) => void;
   bumpStreak: (videoId: string) => void;
