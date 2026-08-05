@@ -307,7 +307,7 @@ export const useStore = create<AppState>()(
       },
       setVideoSummary: (videoId, summary) => {
         set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, summary } : v)) }));
-        // server persistence handled by summarize serverFn
+        // server persistence handled by summarize/clear serverFns
       },
       setVideoDuration: (videoId, seconds) => {
         const prev = get().videos.find((v) => v.id === videoId);
@@ -316,6 +316,16 @@ export const useStore = create<AppState>()(
         const uid = currentUserId();
         if (uid) sync({ kind: "update", table: "videos", values: { duration_seconds: seconds }, match: { id: videoId, user_id: uid } });
       },
+      setVideoPosition: (videoId, seconds) => {
+        const pos = Math.max(0, Math.round(seconds));
+        const prev = get().videos.find((v) => v.id === videoId);
+        if (!prev || prev.lastPositionSeconds === pos) return;
+        set((s) => ({ videos: s.videos.map((v) => (v.id === videoId ? { ...v, lastPositionSeconds: pos } : v)) }));
+        const uid = currentUserId();
+        if (uid) sync({ kind: "update", table: "videos", values: { last_position_seconds: pos }, match: { id: videoId, user_id: uid } });
+      },
+
+
 
 
       logSession: (videoId, seconds) => {
