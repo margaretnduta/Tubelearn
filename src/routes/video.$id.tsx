@@ -304,6 +304,15 @@ function VideoPage() {
               </div>
             </div>
 
+            {resumedFrom !== null && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+                <span className="tabular">Resumed where you left off — {fmtHms(resumedFrom)}</span>
+                <button onClick={handleRestart} className="inline-flex items-center gap-1 hover:text-foreground">
+                  <RotateCcw className="h-3 w-3" /> Start from beginning
+                </button>
+              </div>
+            )}
+
             <div className="mt-6">
               {category && (
                 <Link
