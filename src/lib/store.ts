@@ -36,6 +36,7 @@ export interface Video {
   durationSeconds?: number;
   summary?: string;
   segments: VideoSegment[];
+  lastPositionSeconds?: number;
 }
 
 export interface SessionLog {
