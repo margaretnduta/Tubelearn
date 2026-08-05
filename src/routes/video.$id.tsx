@@ -350,6 +350,7 @@ function VideoPage() {
               maxSegments={maxSegments}
               activeId={activeSegmentId}
               onPlay={playSegment}
+              onAutoSplit={handleAutoSplit}
               onAdd={(name, startSec, endSec) => addSegment(video.id, { name, startSec, endSec })}
               onUpdate={(segId, patch) => updateSegment(video.id, segId, patch)}
               onDelete={(segId) => {
@@ -363,7 +364,11 @@ function VideoPage() {
               loading={summaryLoading}
               error={summaryError}
               onRun={handleSummarize}
+              onDelete={handleDeleteSummary}
             />
+
+            <ChatPanel videoRowId={video.id} youtubeId={video.youtubeId} />
+
 
             <div className="mt-6">
               <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
