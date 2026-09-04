@@ -13,9 +13,14 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — TubeLearn" },
-      { name: "description", content: "Sign in to your TubeLearn account or create one." },
+      { name: "description", content: "Sign in to your TubeLearn account or create one to start studying with YouTube." },
+      { property: "og:title", content: "Sign in — TubeLearn" },
+      { property: "og:description", content: "Sign in to your TubeLearn account or create one to start studying with YouTube." },
+      { property: "og:url", content: "https://studyflow-tube.lovable.app/auth" },
     ],
+    links: [{ rel: "canonical", href: "https://studyflow-tube.lovable.app/auth" }],
   }),
+
   component: AuthPage,
 });
 

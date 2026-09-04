@@ -8,7 +8,17 @@ import { useStore, formatDuration, type Video } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/category/$id")({
+  head: ({ params }) => ({
+    meta: [
+      { title: `Category · ${params.id.slice(0, 8)} — TubeLearn` },
+      { name: "description", content: "A single learning category: its videos grouped by New, In progress and Done." },
+      { property: "og:title", content: "Learning category — TubeLearn" },
+      { property: "og:description", content: "A single learning category: its videos grouped by New, In progress and Done." },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: CategoryPage,
+
   notFoundComponent: () => (
     <AppShell>
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">

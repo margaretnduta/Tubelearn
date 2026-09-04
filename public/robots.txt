@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /library
+Disallow: /profile
+Disallow: /category/
+Disallow: /video/
+
+Sitemap: https://studyflow-tube.lovable.app/sitemap.xml

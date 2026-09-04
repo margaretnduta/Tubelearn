@@ -9,8 +9,15 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "TubeLearn — Turn YouTube into deliberate study" },
       { name: "description", content: "Organize YouTube videos into learning categories, track minutes watched, and complete subjects with intention." },
+      { property: "og:title", content: "TubeLearn — Turn YouTube into deliberate study" },
+      { property: "og:description", content: "Organize YouTube videos into learning categories, track minutes watched, and complete subjects with intention." },
+      { property: "og:url", content: "https://studyflow-tube.lovable.app/" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fa67202-44e8-4b74-9d4c-5a6bae13c00d" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fa67202-44e8-4b74-9d4c-5a6bae13c00d" },
     ],
+    links: [{ rel: "canonical", href: "https://studyflow-tube.lovable.app/" }],
   }),
+
   component: Landing,
 });
 
