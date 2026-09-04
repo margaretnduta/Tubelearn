@@ -299,9 +299,24 @@ function VideoPage() {
     } catch { /* ignore */ }
   };
 
+  const videoJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: video.title,
+    description: video.summary ? video.summary.slice(0, 300) : `${video.title} — studied on TubeLearn.`,
+    thumbnailUrl: video.thumbnail ? [video.thumbnail] : undefined,
+    uploadDate: new Date(video.addedAt).toISOString(),
+    duration: effectiveDuration ? `PT${Math.round(effectiveDuration)}S` : undefined,
+    embedUrl: `https://www.youtube.com/embed/${video.youtubeId}`,
+    contentUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
+    author: video.channel ? { "@type": "Person", name: video.channel } : undefined,
+  };
+
   return (
     <AppShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }} />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10">
+
         <Link to="/dashboard" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
