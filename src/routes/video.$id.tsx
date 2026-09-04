@@ -7,7 +7,17 @@ import { useAuth } from "@/lib/auth";
 import { summarizeVideo, clearVideoSummary, askAboutVideo } from "@/lib/summarize.functions";
 
 export const Route = createFileRoute("/video/$id")({
+  head: () => ({
+    meta: [
+      { title: "Watching — TubeLearn" },
+      { name: "description", content: "Watch a saved YouTube video, track active watch time, take notes and generate an AI summary." },
+      { property: "og:title", content: "Watching — TubeLearn" },
+      { property: "og:description", content: "Watch a saved YouTube video, track active watch time, take notes and generate an AI summary." },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: VideoPage,
+
   notFoundComponent: () => (
     <AppShell>
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">
