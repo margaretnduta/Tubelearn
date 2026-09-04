@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/library': typeof LibraryRoute
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/category/$id': typeof CategoryIdRoute
   '/video/$id': typeof VideoIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/library'
     | '/profile'
+    | '/sitemap.xml'
     | '/category/$id'
     | '/video/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/library'
     | '/profile'
+    | '/sitemap.xml'
     | '/category/$id'
     | '/video/$id'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/library'
     | '/profile'
+    | '/sitemap.xml'
     | '/category/$id'
     | '/video/$id'
   fileRoutesById: FileRoutesById
@@ -117,12 +129,20 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LibraryRoute: typeof LibraryRoute
   ProfileRoute: typeof ProfileRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   CategoryIdRoute: typeof CategoryIdRoute
   VideoIdRoute: typeof VideoIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LibraryRoute: LibraryRoute,
   ProfileRoute: ProfileRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   CategoryIdRoute: CategoryIdRoute,
   VideoIdRoute: VideoIdRoute,
 }
