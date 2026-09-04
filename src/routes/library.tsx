@@ -11,8 +11,12 @@ export const Route = createFileRoute("/library")({
     meta: [
       { title: "Library — TubeLearn" },
       { name: "description", content: "Every video you've added, across all categories." },
+      { property: "og:title", content: "Library — TubeLearn" },
+      { property: "og:description", content: "Every video you've added, across all categories." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
+
   component: Library,
 });
 
