@@ -9,8 +9,12 @@ export const Route = createFileRoute("/profile")({
     meta: [
       { title: "Your profile — TubeLearn" },
       { name: "description", content: "Manage your TubeLearn account, username, and email." },
+      { property: "og:title", content: "Your profile — TubeLearn" },
+      { property: "og:description", content: "Manage your TubeLearn account, username, and email." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
+
   component: ProfilePage,
 });
 
