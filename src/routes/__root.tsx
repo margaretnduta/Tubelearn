@@ -77,16 +77,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "TubeLearn" },
       { name: "mobile-web-app-capable", content: "yes" },
-      { title: "TubeLearn — Turn YouTube into deliberate study" },
-      { name: "description", content: "Organize YouTube videos into learning categories and track real progress." },
-      { property: "og:title", content: "TubeLearn — Turn YouTube into deliberate study" },
-      { property: "og:description", content: "Organize YouTube videos into learning categories and track real progress." },
+      { property: "og:site_name", content: "TubeLearn" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "TubeLearn — Turn YouTube into deliberate study" },
-      { name: "twitter:description", content: "Organize YouTube videos into learning categories and track real progress." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fa67202-44e8-4b74-9d4c-5a6bae13c00d" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fa67202-44e8-4b74-9d4c-5a6bae13c00d" },
+
     ],
     links: [
       { rel: "stylesheet", href: appCss },
