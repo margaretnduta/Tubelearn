@@ -19,8 +19,12 @@ export const Route = createFileRoute("/dashboard")({
     meta: [
       { title: "Dashboard — TubeLearn" },
       { name: "description", content: "Your learning dashboard: categories, progress, and recent study." },
+      { property: "og:title", content: "Dashboard — TubeLearn" },
+      { property: "og:description", content: "Your learning dashboard: categories, progress, and recent study." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
+
   component: Dashboard,
 });
 
