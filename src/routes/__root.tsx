@@ -79,9 +79,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { property: "og:site_name", content: "TubeLearn" },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fa67202-44e8-4b74-9d4c-5a6bae13c00d" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fa67202-44e8-4b74-9d4c-5a6bae13c00d" },
+      { name: "twitter:card", content: "summary_large_image" },
+
 
     ],
     links: [
