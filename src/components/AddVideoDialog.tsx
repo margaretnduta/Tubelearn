@@ -188,6 +188,15 @@ export function AddVideoDialog({ open, onOpenChange, defaultCategoryId = null }:
                   {c.name}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={openNewCategory}
+                aria-label="Create new category"
+                title="Create new category"
+                className="flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+              >
+                <Plus className="h-3 w-3" /> New
+              </button>
             </div>
           </div>
         </div>
@@ -209,6 +218,11 @@ export function AddVideoDialog({ open, onOpenChange, defaultCategoryId = null }:
           </button>
         </div>
       </form>
+
+      {/* Inline category creation — stopPropagation so its backdrop click doesn't close this dialog */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <CategoryDialog open={catDialogOpen} onOpenChange={closeNewCategory} />
+      </div>
     </div>
   );
 }
