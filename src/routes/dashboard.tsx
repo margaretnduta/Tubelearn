@@ -71,7 +71,7 @@ function Dashboard() {
               <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-[var(--ember)]">
                 Your study desk
               </p>
-              <h1 className="font-display text-4xl leading-[1.05] tracking-tight sm:text-6xl">
+              <h1 className="hidden font-display text-4xl leading-[1.05] tracking-tight sm:block sm:text-6xl">
                 {totalVideos === 0 ? (
                   <>Pick a subject.<br /><em className="text-muted-foreground">Make a start.</em></>
                 ) : (
