@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Loader2, Link2, Check } from "lucide-react";
+import { useRef, useState } from "react";
+import { Loader2, Link2, Check, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { parseYouTubeId, fetchOEmbed, thumbnailUrl } from "@/lib/youtube";
+import { CategoryDialog } from "@/components/CategoryDialog";
 
 interface Props {
   open: boolean;
@@ -21,6 +22,22 @@ export function AddVideoDialog({ open, onOpenChange, defaultCategoryId = null }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolved, setResolved] = useState<string | null>(null);
+  const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const catIdsBeforeAdd = useRef<Set<string>>(new Set());
+
+  const openNewCategory = () => {
+    catIdsBeforeAdd.current = new Set(useStore.getState().categories.map((c) => c.id));
+    setCatDialogOpen(true);
+  };
+
+  const closeNewCategory = (v: boolean) => {
+    setCatDialogOpen(v);
+    if (!v) {
+      // Auto-select the category just created, if any
+      const added = useStore.getState().categories.find((c) => !catIdsBeforeAdd.current.has(c.id));
+      if (added) setCategoryId(added.id);
+    }
+  };
 
   if (!open) return null;
 
