@@ -784,15 +784,31 @@ function SummaryPanel({
           </button>
         </div>
       </div>
-      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+      {error && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+          <p className="min-w-0 text-xs text-destructive [overflow-wrap:anywhere]">{error}</p>
+          <button
+            onClick={onRun}
+            disabled={loading}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs hover:text-foreground disabled:opacity-50"
+          >
+            <RotateCcw className="h-3 w-3" /> Try again
+          </button>
+        </div>
+      )}
       {!summary && !loading && (
         <p className="mt-2 text-xs text-muted-foreground">
           Get a concise overview, key takeaways, and things to review. Auto-translated to English if the video isn't already.
         </p>
       )}
+      {loading && (
+        <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading the video and writing your summary…
+        </p>
+      )}
       {summary && (
-        <div className="prose prose-sm prose-invert mt-3 max-w-none whitespace-pre-wrap text-sm text-foreground/90">
-          {summary}
+        <div className="mt-3">
+          <Markdown>{summary}</Markdown>
         </div>
       )}
     </div>
