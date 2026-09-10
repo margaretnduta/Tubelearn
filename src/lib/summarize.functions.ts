@@ -134,7 +134,7 @@ export const askAboutVideo = createServerFn({ method: "POST" })
       "You are a study assistant answering questions about ONE specific YouTube video.",
       "Ground every answer in the provided transcript and summary.",
       "If the material doesn't cover the question, say so briefly and then give your best general explanation, clearly labelled.",
-      "Always answer in English. Be concise and use short paragraphs or bullets.",
+      "Always answer in English. Be concise, use Markdown (short paragraphs, bullets, bold for key terms).",
       "",
       `Video title: ${row.title}`,
       `Channel: ${row.channel}`,
@@ -148,6 +148,45 @@ export const askAboutVideo = createServerFn({ method: "POST" })
       messages: [...data.history, { role: "user" as const, content: data.question }],
     });
 
+    // Persist the exchange so it survives a page refresh (scoped to this user + video by RLS)
+    await supabase.from("video_chat_messages").insert([
+      { user_id: userId, video_id: data.videoRowId, role: "user", content: data.question },
+      { user_id: userId, video_id: data.videoRowId, role: "assistant", content: text },
+    ]);
+
     return { answer: text };
+  });
+
+export const getVideoChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => ClearInput.parse(raw))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: rows, error } = await supabase
+      .from("video_chat_messages")
+      .select("id, role, content, created_at")
+      .eq("video_id", data.videoRowId)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (error) throw new Error("Could not load the conversation");
+    return {
+      messages: (rows ?? []).map((r) => ({
+        role: r.role as "user" | "assistant",
+        content: r.content,
+      })),
+    };
+  });
+
+export const clearVideoChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => ClearInput.parse(raw))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("video_chat_messages").delete()
+      .eq("video_id", data.videoRowId).eq("user_id", userId);
+    if (error) throw new Error("Could not clear the conversation");
+    return { ok: true };
   });
 

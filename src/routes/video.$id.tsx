@@ -2,9 +2,10 @@ import { createFileRoute, Link, Navigate, notFound } from "@tanstack/react-route
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Trash2, ExternalLink, Scissors, Plus, Play, Sparkles, Loader2, Pencil, X, Send, RotateCcw, Wand2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Markdown } from "@/components/Markdown";
 import { useStore, formatDuration, relativeTime, type VideoSegment } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
-import { summarizeVideo, clearVideoSummary, askAboutVideo } from "@/lib/summarize.functions";
+import { summarizeVideo, clearVideoSummary, askAboutVideo, getVideoChat, clearVideoChat } from "@/lib/summarize.functions";
 
 export const Route = createFileRoute("/video/$id")({
   head: () => ({
@@ -784,15 +785,31 @@ function SummaryPanel({
           </button>
         </div>
       </div>
-      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+      {error && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+          <p className="min-w-0 text-xs text-destructive [overflow-wrap:anywhere]">{error}</p>
+          <button
+            onClick={onRun}
+            disabled={loading}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs hover:text-foreground disabled:opacity-50"
+          >
+            <RotateCcw className="h-3 w-3" /> Try again
+          </button>
+        </div>
+      )}
       {!summary && !loading && (
         <p className="mt-2 text-xs text-muted-foreground">
           Get a concise overview, key takeaways, and things to review. Auto-translated to English if the video isn't already.
         </p>
       )}
+      {loading && (
+        <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading the video and writing your summary…
+        </p>
+      )}
       {summary && (
-        <div className="prose prose-sm prose-invert mt-3 max-w-none whitespace-pre-wrap text-sm text-foreground/90">
-          {summary}
+        <div className="mt-3">
+          <Markdown>{summary}</Markdown>
         </div>
       )}
     </div>
@@ -807,50 +824,97 @@ function ChatPanel({ videoRowId, youtubeId }: { videoRowId: string; youtubeId: s
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [failedQuestion, setFailedQuestion] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
+  const busyRef = useRef(false);
+
+  // Restore this user's saved conversation for this video
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingHistory(true);
+    setMessages([]);
+    getVideoChat({ data: { videoRowId } })
+      .then((res) => { if (!cancelled) setMessages(res.messages); })
+      .catch(() => { /* an empty thread is a fine fallback */ })
+      .finally(() => { if (!cancelled) setLoadingHistory(false); });
+    return () => { cancelled = true; };
+  }, [videoRowId]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [messages, busy]);
 
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = input.trim();
-    if (!q || busy) return;
-    setErr(null);
-    setInput("");
-    const history = messages.slice(-10);
-    setMessages((m) => [...m, { role: "user", content: q }]);
+  const ask = useCallback(async (question: string, alreadyShown: boolean) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
+    setErr(null);
+    setFailedQuestion(null);
+    const history = messages.filter((m) => !alreadyShown || m.content !== question).slice(-10);
+    if (!alreadyShown) setMessages((m) => [...m, { role: "user", content: question }]);
     try {
-      const res = await askAboutVideo({ data: { videoRowId, youtubeId, question: q, history } });
+      const res = await askAboutVideo({ data: { videoRowId, youtubeId, question, history } });
       setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
     } catch (e2) {
       setErr(e2 instanceof Error ? e2.message : "Couldn't get an answer");
+      setFailedQuestion(question);
     } finally {
+      busyRef.current = false;
       setBusy(false);
+    }
+  }, [messages, videoRowId, youtubeId]);
+
+  const send = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = input.trim();
+    if (!q || busy) return;
+    setInput("");
+    void ask(q, false);
+  };
+
+  const retry = () => {
+    if (!failedQuestion || busy) return;
+    void ask(failedQuestion, true);
+  };
+
+  const clearAll = async () => {
+    setMessages([]);
+    setErr(null);
+    setFailedQuestion(null);
+    try {
+      await clearVideoChat({ data: { videoRowId } });
+    } catch {
+      setErr("Couldn't clear the saved conversation. Refresh and try again.");
     }
   };
 
   return (
-    <div className="mt-6 rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center justify-between gap-2">
+    <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[var(--ember)]" />
           <h2 className="font-display text-xl tracking-tight">Ask about this video</h2>
         </div>
         {messages.length > 0 && (
           <button
-            onClick={() => { setMessages([]); setErr(null); }}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+            onClick={clearAll}
+            disabled={busy}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
-            <RotateCcw className="h-3 w-3" /> Clear
+            <Trash2 className="h-3 w-3" /> Clear
           </button>
         )}
       </div>
 
-      {messages.length === 0 && !busy && (
+      {loadingHistory && (
+        <p className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading your conversation…
+        </p>
+      )}
+
+      {!loadingHistory && messages.length === 0 && !busy && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Ask questions tailored to this video — the assistant reads its transcript and summary.
+          Ask questions tailored to this video — the assistant reads its transcript and summary. Your conversation is saved for next time.
         </p>
       )}
 
@@ -859,13 +923,13 @@ function ChatPanel({ videoRowId, youtubeId }: { videoRowId: string; youtubeId: s
           {messages.map((m, i) => (
             <div
               key={i}
-              className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+              className={`rounded-lg px-3 py-2 text-sm [overflow-wrap:anywhere] ${
                 m.role === "user"
-                  ? "ml-auto max-w-[85%] bg-foreground text-background"
-                  : "mr-auto max-w-[92%] border border-border bg-background text-foreground/90"
+                  ? "ml-auto max-w-[90%] whitespace-pre-wrap bg-foreground text-background sm:max-w-[85%]"
+                  : "mr-auto max-w-full border border-border bg-background text-foreground/90 sm:max-w-[92%]"
               }`}
             >
-              {m.content}
+              {m.role === "assistant" ? <Markdown>{m.content}</Markdown> : m.content}
             </div>
           ))}
           {busy && (
@@ -877,7 +941,20 @@ function ChatPanel({ videoRowId, youtubeId }: { videoRowId: string; youtubeId: s
         </div>
       )}
 
-      {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+      {err && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+          <p className="min-w-0 text-xs text-destructive [overflow-wrap:anywhere]">{err}</p>
+          {failedQuestion && (
+            <button
+              onClick={retry}
+              disabled={busy}
+              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs hover:text-foreground disabled:opacity-50"
+            >
+              <RotateCcw className="h-3 w-3" /> Try again
+            </button>
+          )}
+        </div>
+      )}
 
       <form onSubmit={send} className="mt-4 flex items-center gap-2">
         <input
@@ -885,7 +962,8 @@ function ChatPanel({ videoRowId, youtubeId }: { videoRowId: string; youtubeId: s
           onChange={(e) => setInput(e.target.value)}
           placeholder="e.g. Explain the main argument in simple terms"
           maxLength={2000}
-          className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2"
+          disabled={busy}
+          className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2 disabled:opacity-60"
         />
         <button
           type="submit"
@@ -893,7 +971,7 @@ function ChatPanel({ videoRowId, youtubeId }: { videoRowId: string; youtubeId: s
           className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[var(--ember)] text-[oklch(0.2_0.02_60)] disabled:opacity-50"
           aria-label="Send question"
         >
-          <Send className="h-4 w-4" />
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </button>
       </form>
     </div>
