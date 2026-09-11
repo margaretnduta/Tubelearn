@@ -85,6 +85,8 @@ function loadYT(): Promise<YTGlobal> {
 
 function VideoPage() {
   const userId = useAuth((s) => s.currentUserId);
+  const authLoading = useAuth((s) => s.loading);
+  const storeHydrated = useStore((s) => s.hydrated);
   const { id } = Route.useParams();
   const video = useStore((s) => s.videos.find((v) => v.id === id));
   const categories = useStore((s) => s.categories);
