@@ -123,6 +123,7 @@ function VideoPage() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [resumedFrom, setResumedFrom] = useState<number | null>(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   const playerHostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
