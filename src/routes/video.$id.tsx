@@ -243,6 +243,14 @@ function VideoPage() {
     } catch { /* ignore */ }
   }, []);
 
+  // Wait for the session/library to restore on a hard refresh before deciding anything
+  if (authLoading || (userId && !storeHydrated && !video)) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center text-sm text-muted-foreground">
+        <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</span>
+      </div>
+    );
+  }
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: `/video/${id}` }} />;
   if (!video) throw notFound();
 
