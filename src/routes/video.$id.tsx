@@ -2,8 +2,9 @@ import { createFileRoute, Link, Navigate, notFound } from "@tanstack/react-route
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Trash2, ExternalLink, Scissors, Plus, Play, Sparkles, Loader2, Pencil, X, Send, RotateCcw, Wand2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { CategoryDialog } from "@/components/CategoryDialog";
 import { Markdown } from "@/components/Markdown";
-import { useStore, formatDuration, relativeTime, type VideoSegment } from "@/lib/store";
+import { useStore, formatDuration, relativeTime, type VideoSegment, type Category } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { summarizeVideo, clearVideoSummary, askAboutVideo, getVideoChat, clearVideoChat } from "@/lib/summarize.functions";
 
