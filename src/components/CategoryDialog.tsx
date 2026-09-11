@@ -5,11 +5,12 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initial?: Category | null;
+  onCreated?: (category: Category) => void;
 }
 
 const ICONS = ["◐", "◇", "✦", "▲", "●", "✶", "❖", "✺", "✿", "☼"];
 
-export function CategoryDialog({ open, onOpenChange, initial }: Props) {
+export function CategoryDialog({ open, onOpenChange, initial, onCreated }: Props) {
   const addCategory = useStore((s) => s.addCategory);
   const updateCategory = useStore((s) => s.updateCategory);
   const [name, setName] = useState("");
@@ -42,7 +43,8 @@ export function CategoryDialog({ open, onOpenChange, initial }: Props) {
     if (isEdit && initial) {
       updateCategory(initial.id, payload);
     } else {
-      addCategory(payload);
+      const cat = addCategory(payload);
+      onCreated?.(cat);
     }
     onOpenChange(false);
   };
