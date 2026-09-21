@@ -469,8 +469,22 @@ function VideoPage() {
                     {c.name}
                   </button>
                 ))}
+                <button
+                  onClick={() => setCategoryOpen(true)}
+                  aria-label="Add new category"
+                  title="New category"
+                  className="flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-foreground hover:text-foreground"
+                >
+                  <Plus className="h-3 w-3" /> New
+                </button>
               </div>
             </div>
+
+            <CategoryDialog
+              open={categoryOpen}
+              onOpenChange={setCategoryOpen}
+              onCreated={(cat: Category) => assignCategory(video.id, cat.id)}
+            />
 
             {otherInCategory.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-5">
