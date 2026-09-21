@@ -1,0 +1,1 @@
+DELETE FROM public.categories WHERE user_id = 'df9d232c-4b71-4e43-8d43-2c1011673ba8' AND name = 'Temp test cat';
