@@ -221,6 +221,7 @@ async function fetchProfile(id: string): Promise<AuthUser | null> {
     username: data.username ?? "",
     email: data.email ?? "",
     createdAt: new Date(data.created_at).getTime(),
+    avatarUrl: data.avatar_url ?? null,
   };
 }
 
