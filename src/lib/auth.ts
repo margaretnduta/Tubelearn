@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { runMigrationIfNeeded, clearLocalData } from "@/lib/migration";
 import { useStore, _setUserIdGetter } from "@/lib/store";
+import { AVATAR_BUCKET, avatarStoragePath, invalidateAvatarUrl, normalizeAvatarImage } from "@/lib/avatar";
 
 export interface AuthUser {
   id: string;
@@ -10,6 +11,7 @@ export interface AuthUser {
   username: string;
   email: string;
   createdAt: number;
+  avatarUrl: string | null;
 }
 
 type Result<T = void> = ({ ok: true } & T) | { ok: false; error: string };
@@ -25,6 +27,8 @@ interface AuthState {
   signOut: () => Promise<void>;
   currentUser: () => AuthUser | null;
   updateProfile: (patch: { name?: string; username?: string; email?: string }) => Promise<Result>;
+  uploadAvatar: (file: File) => Promise<Result>;
+  removeAvatar: () => Promise<Result>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<Result>;
   resetPassword: (email: string, _newPassword?: string) => Promise<Result>;
   deleteAccount: () => Promise<void>;
