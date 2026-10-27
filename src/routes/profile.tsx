@@ -1,7 +1,8 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { LogOut, Trash2, UserCircle2, Save, KeyRound, Eye, EyeOff } from "lucide-react";
+import { useRef, useState } from "react";
+import { LogOut, Trash2, Camera, Save, KeyRound, Eye, EyeOff, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Avatar } from "@/components/Avatar";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/profile")({
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const user = useAuth((s) => (s.currentUserId ? s.users.find((u) => u.id === s.currentUserId) : null));
   const updateProfile = useAuth((s) => s.updateProfile);
+  const uploadAvatar = useAuth((s) => s.uploadAvatar);
+  const removeAvatar = useAuth((s) => s.removeAvatar);
   const changePassword = useAuth((s) => s.changePassword);
   const signOut = useAuth((s) => s.signOut);
   const deleteAccount = useAuth((s) => s.deleteAccount);
@@ -30,6 +33,10 @@ function ProfilePage() {
   const [username, setUsername] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -76,17 +83,107 @@ function ProfilePage() {
     navigate({ to: "/" });
   };
 
+  const onAvatarPicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarBusy(true);
+    setAvatarMsg(null);
+    const result = await uploadAvatar(file);
+    setAvatarBusy(false);
+    setAvatarMsg(
+      result.ok ? { kind: "ok", text: "Profile picture updated." } : { kind: "err", text: result.error },
+    );
+  };
+
+  const onAvatarRemove = async () => {
+    setAvatarBusy(true);
+    setAvatarMsg(null);
+    const result = await removeAvatar();
+    setAvatarBusy(false);
+    setAvatarMsg(
+      result.ok ? { kind: "ok", text: "Profile picture removed." } : { kind: "err", text: result.error },
+    );
+  };
+
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-8 sm:py-16">
-        <div className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--ember)] text-[oklch(0.2_0.02_60)]">
-            <UserCircle2 className="h-6 w-6" />
-          </div>
+        <div className="flex items-center gap-4">
+          <Avatar
+            path={user.avatarUrl}
+            name={user.name || user.username}
+            className="h-16 w-16 rounded-full border border-border text-xl"
+          />
           <div>
             <h1 className="font-display text-3xl tracking-tight">Hello {user.username}</h1>
-            <p className="text-sm text-muted-foreground">Manage your account & identity.</p>
+            <p className="text-sm text-muted-foreground">
+              Member since{" "}
+              {new Date(user.createdAt).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}{" "}
+              · Manage your account & identity.
+            </p>
           </div>
+        </div>
+
+        <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center">
+          <div className="relative shrink-0">
+            <Avatar
+              path={user.avatarUrl}
+              name={user.name || user.username}
+              className="h-20 w-20 rounded-full border border-border text-2xl"
+            />
+            {avatarBusy && (
+              <div className="absolute inset-0 grid place-items-center rounded-full bg-background/60">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Profile picture</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={avatarBusy}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+              >
+                <Camera className="h-4 w-4" /> {user.avatarUrl ? "Change photo" : "Upload photo"}
+              </button>
+              {user.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={onAvatarRemove}
+                  disabled={avatarBusy}
+                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" /> Remove
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">JPG or PNG — we crop it to a square for you.</p>
+            {avatarMsg && (
+              <div
+                className={`mt-2 rounded-md border px-3 py-2 text-sm ${
+                  avatarMsg.kind === "ok"
+                    ? "border-[var(--moss)]/40 bg-[var(--moss)]/10 text-foreground"
+                    : "border-destructive/40 bg-destructive/10 text-destructive"
+                }`}
+              >
+                {avatarMsg.text}
+              </div>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onAvatarPicked}
+          />
         </div>
 
         <form onSubmit={onSave} className="mt-8 space-y-5 rounded-2xl border border-border bg-card p-6">
