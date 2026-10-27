@@ -1,9 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap, Github, Mail, Menu, UserCircle2 } from "lucide-react";
+import { Moon, Sun, Plus, LayoutDashboard, Library, Sparkles, LogOut, GraduationCap, Github, Mail, Menu } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { AddVideoDialog } from "./AddVideoDialog";
+import { Avatar } from "./Avatar";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { OfflineBanner } from "./OfflineBanner";
 
@@ -74,7 +75,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                     onClick={() => setOpenNav(false)}
                     className="mt-1 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
-                    <UserCircle2 className="h-4 w-4" /> Profile
+                    <Avatar
+                      path={user.avatarUrl}
+                      name={user.name || user.username}
+                      className="h-6 w-6 rounded-full border border-border text-[10px]"
+                    />
+                    Profile
                   </Link>
                 )}
                 {user && (
@@ -144,9 +150,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to="/profile"
                   aria-label="Your profile"
-                  className="grid h-10 w-10 place-items-center rounded-md border border-border text-muted-foreground hover:text-foreground"
+                  className="rounded-full ring-foreground/0 transition-shadow hover:ring-2 hover:ring-[var(--ember)]"
                 >
-                  <UserCircle2 className="h-5 w-5" />
+                  <Avatar
+                    path={user.avatarUrl}
+                    name={user.name || user.username}
+                    className="h-10 w-10 rounded-full border border-border text-sm"
+                  />
                 </Link>
                 <button
                   onClick={() => { signOut(); navigate({ to: "/" }); }}
