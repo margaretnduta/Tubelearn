@@ -71,6 +71,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
       username: slugifyUsername(name),
       email: e,
       createdAt: Date.now(),
+      avatarUrl: null,
     };
     return { ok: true, user };
   },
@@ -81,7 +82,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
     if (error) return { ok: false, error: error.message };
     if (!data.user) return { ok: false, error: "Sign in failed." };
     const profile = await fetchProfile(data.user.id);
-    return { ok: true, user: profile ?? { id: data.user.id, name: "", username: "", email: e, createdAt: Date.now() } };
+    return { ok: true, user: profile ?? { id: data.user.id, name: "", username: "", email: e, createdAt: Date.now(), avatarUrl: null } };
   },
 
   signInWithGoogle: async () => {
@@ -136,6 +137,48 @@ export const useAuth = create<AuthState>()((set, get) => ({
       const cur = get().users.find((u) => u.id === id);
       if (cur) set({ users: [{ ...cur, ...next }] });
     }
+    return { ok: true };
+  },
+
+  uploadAvatar: async (file) => {
+    const id = get().currentUserId;
+    if (!id) return { ok: false, error: "Not signed in." };
+    if (!file.type.startsWith("image/")) return { ok: false, error: "Please choose an image file." };
+    if (file.size > 20 * 1024 * 1024) return { ok: false, error: "That image is too large (max 20 MB)." };
+    try {
+      const blob = await normalizeAvatarImage(file);
+      const path = avatarStoragePath(id);
+      const { error: upErr } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
+      if (upErr) return { ok: false, error: `Upload failed: ${upErr.message}` };
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: path })
+        .eq("id", id);
+      if (error) return { ok: false, error: error.message };
+      invalidateAvatarUrl(path);
+      const cur = get().users.find((u) => u.id === id);
+      if (cur) set({ users: [{ ...cur, avatarUrl: path }] });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Upload failed." };
+    }
+  },
+
+  removeAvatar: async () => {
+    const id = get().currentUserId;
+    if (!id) return { ok: false, error: "Not signed in." };
+    const path = avatarStoragePath(id);
+    await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("id", id);
+    if (error) return { ok: false, error: error.message };
+    invalidateAvatarUrl(path);
+    const cur = get().users.find((u) => u.id === id);
+    if (cur) set({ users: [{ ...cur, avatarUrl: null }] });
     return { ok: true };
   },
 
