@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { runMigrationIfNeeded, clearLocalData } from "@/lib/migration";
 import { useStore, _setUserIdGetter } from "@/lib/store";
+import { AVATAR_BUCKET, avatarStoragePath, invalidateAvatarUrl, normalizeAvatarImage } from "@/lib/avatar";
 
 export interface AuthUser {
   id: string;
@@ -10,6 +11,7 @@ export interface AuthUser {
   username: string;
   email: string;
   createdAt: number;
+  avatarUrl: string | null;
 }
 
 type Result<T = void> = ({ ok: true } & T) | { ok: false; error: string };
@@ -25,6 +27,8 @@ interface AuthState {
   signOut: () => Promise<void>;
   currentUser: () => AuthUser | null;
   updateProfile: (patch: { name?: string; username?: string; email?: string }) => Promise<Result>;
+  uploadAvatar: (file: File) => Promise<Result>;
+  removeAvatar: () => Promise<Result>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<Result>;
   resetPassword: (email: string, _newPassword?: string) => Promise<Result>;
   deleteAccount: () => Promise<void>;
@@ -67,6 +71,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
       username: slugifyUsername(name),
       email: e,
       createdAt: Date.now(),
+      avatarUrl: null,
     };
     return { ok: true, user };
   },
@@ -77,7 +82,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
     if (error) return { ok: false, error: error.message };
     if (!data.user) return { ok: false, error: "Sign in failed." };
     const profile = await fetchProfile(data.user.id);
-    return { ok: true, user: profile ?? { id: data.user.id, name: "", username: "", email: e, createdAt: Date.now() } };
+    return { ok: true, user: profile ?? { id: data.user.id, name: "", username: "", email: e, createdAt: Date.now(), avatarUrl: null } };
   },
 
   signInWithGoogle: async () => {
@@ -135,6 +140,48 @@ export const useAuth = create<AuthState>()((set, get) => ({
     return { ok: true };
   },
 
+  uploadAvatar: async (file) => {
+    const id = get().currentUserId;
+    if (!id) return { ok: false, error: "Not signed in." };
+    if (!file.type.startsWith("image/")) return { ok: false, error: "Please choose an image file." };
+    if (file.size > 20 * 1024 * 1024) return { ok: false, error: "That image is too large (max 20 MB)." };
+    try {
+      const blob = await normalizeAvatarImage(file);
+      const path = avatarStoragePath(id);
+      const { error: upErr } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
+      if (upErr) return { ok: false, error: `Upload failed: ${upErr.message}` };
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: path })
+        .eq("id", id);
+      if (error) return { ok: false, error: error.message };
+      invalidateAvatarUrl(path);
+      const cur = get().users.find((u) => u.id === id);
+      if (cur) set({ users: [{ ...cur, avatarUrl: path }] });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Upload failed." };
+    }
+  },
+
+  removeAvatar: async () => {
+    const id = get().currentUserId;
+    if (!id) return { ok: false, error: "Not signed in." };
+    const path = avatarStoragePath(id);
+    await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("id", id);
+    if (error) return { ok: false, error: error.message };
+    invalidateAvatarUrl(path);
+    const cur = get().users.find((u) => u.id === id);
+    if (cur) set({ users: [{ ...cur, avatarUrl: null }] });
+    return { ok: true };
+  },
+
   changePassword: async (_currentPassword, newPassword) => {
     if (newPassword.length < 6) return { ok: false, error: "New password must be at least 6 characters." };
     const { error } = await supabase.auth.updateUser({ password: newPassword });
@@ -174,6 +221,7 @@ async function fetchProfile(id: string): Promise<AuthUser | null> {
     username: data.username ?? "",
     email: data.email ?? "",
     createdAt: new Date(data.created_at).getTime(),
+    avatarUrl: data.avatar_url ?? null,
   };
 }
 
