@@ -21,6 +21,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const user = useAuth((s) => (s.currentUserId ? s.users.find((u) => u.id === s.currentUserId) : null));
+  const authLoading = useAuth((s) => s.loading);
   const updateProfile = useAuth((s) => s.updateProfile);
   const uploadAvatar = useAuth((s) => s.uploadAvatar);
   const removeAvatar = useAuth((s) => s.removeAvatar);
@@ -46,6 +47,7 @@ function ProfilePage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
+  if (authLoading) return null;
   if (!user) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/profile" }} />;
 
   const onSave = async (e: React.FormEvent) => {
