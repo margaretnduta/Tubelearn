@@ -30,6 +30,7 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const userId = useAuth((s) => s.currentUserId);
+  const authLoading = useAuth((s) => s.loading);
   const categories = useStore((s) => s.categories);
   const videos = useStore((s) => s.videos);
   const sessions = useStore((s) => s.sessions);
@@ -46,6 +47,7 @@ function Dashboard() {
     : Infinity;
   const liveStreak = daysSince <= 1 ? streak : 0;
 
+  if (authLoading) return null;
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/dashboard" }} />;
 
   const totalVideos = videos.length;

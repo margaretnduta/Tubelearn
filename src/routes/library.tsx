@@ -22,12 +22,14 @@ export const Route = createFileRoute("/library")({
 
 function Library() {
   const userId = useAuth((s) => s.currentUserId);
+  const authLoading = useAuth((s) => s.loading);
   const videos = useStore((s) => s.videos);
   const categories = useStore((s) => s.categories);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "todo" | "done" | "unsorted">("all");
   const [catFilter, setCatFilter] = useState<string | "all">("all");
 
+  if (authLoading) return null;
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/library" }} />;
 
   const q = query.trim().toLowerCase();

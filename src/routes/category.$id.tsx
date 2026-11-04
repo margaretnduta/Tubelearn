@@ -45,12 +45,14 @@ function bucket(v: Video): "new" | "progress" | "done" {
 
 function CategoryPage() {
   const userId = useAuth((s) => s.currentUserId);
+  const authLoading = useAuth((s) => s.loading);
   const { id } = Route.useParams();
   const category = useStore((s) => s.categories.find((c) => c.id === id));
   const videos = useStore((s) => s.videos).filter((v) => v.categoryId === id);
   const deleteCategory = useStore((s) => s.deleteCategory);
   const [openAdd, setOpenAdd] = useState(false);
 
+  if (authLoading) return null;
   if (!userId) return <Navigate to="/auth" search={{ mode: "signin", redirect: `/category/${id}` }} />;
   if (!category) throw notFound();
 
