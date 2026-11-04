@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LogOut, Trash2, Camera, Save, KeyRound, Eye, EyeOff, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
@@ -21,6 +21,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const user = useAuth((s) => (s.currentUserId ? s.users.find((u) => u.id === s.currentUserId) : null));
+  const authLoading = useAuth((s) => s.loading);
   const updateProfile = useAuth((s) => s.updateProfile);
   const uploadAvatar = useAuth((s) => s.uploadAvatar);
   const removeAvatar = useAuth((s) => s.removeAvatar);
@@ -34,6 +35,14 @@ function ProfilePage() {
   const [email, setEmail] = useState(user?.email ?? "");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
+  // The store hydrates after first render on a hard refresh — sync the form once the profile lands.
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name);
+    setUsername(user.username);
+    setEmail(user.email);
+  }, [user?.id, user?.name, user?.username, user?.email]);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarMsg, setAvatarMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -46,6 +55,7 @@ function ProfilePage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
+  if (authLoading) return null;
   if (!user) return <Navigate to="/auth" search={{ mode: "signin", redirect: "/profile" }} />;
 
   const onSave = async (e: React.FormEvent) => {
