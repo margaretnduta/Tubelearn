@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LogOut, Trash2, Camera, Save, KeyRound, Eye, EyeOff, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
@@ -34,6 +34,14 @@ function ProfilePage() {
   const [username, setUsername] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  // The store hydrates after first render on a hard refresh — sync the form once the profile lands.
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name);
+    setUsername(user.username);
+    setEmail(user.email);
+  }, [user?.id, user?.name, user?.username, user?.email]);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
