@@ -8,6 +8,13 @@
       "when": 1793074266945,
       "tag": "0000_add_profile_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794498986761,
+      "tag": "0001_restrict_avatar_reads",
+      "breakpoints": true
     }
   ]
 }
