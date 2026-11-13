@@ -52,6 +52,8 @@ type YTGlobal = {
     el: HTMLElement,
     opts: {
       videoId: string;
+      width?: string | number;
+      height?: string | number;
       playerVars?: Record<string, unknown>;
       events?: {
         onReady?: (e: { target: YTPlayer }) => void;
