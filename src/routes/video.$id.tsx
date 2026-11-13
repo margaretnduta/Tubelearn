@@ -170,6 +170,8 @@ function VideoPage() {
       playerHostRef.current.appendChild(host);
       const resumeAt = Math.max(0, Math.round(resumeAtRef.current || 0));
       playerRef.current = new YT.Player(host, {
+        width: "100%",
+        height: "100%",
         videoId: video.youtubeId,
         playerVars: { rel: 0, modestbranding: 1, ...(resumeAt > 5 ? { start: resumeAt } : {}) },
         events: {
@@ -338,7 +340,7 @@ function VideoPage() {
           <div className="min-w-0">
             <div className="overflow-hidden rounded-xl border border-border bg-black shadow-lift">
               <div className="aspect-video w-full">
-                <div ref={playerHostRef} className="h-full w-full" />
+                <div ref={playerHostRef} className="yt-player-host h-full w-full" />
               </div>
             </div>
 
